@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "89932385054",
+    "project_id": "notibet-10e16",
+    "storage_bucket": "notibet-10e16.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:89932385054:android:af1ec45d31767bc5e4d70f",
+        "android_client_info": {
+          "package_name": "com.notibet"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "89932385054-0gdfsvmmh6qn2ot4resd3md49evk1lc1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBB6xgpU6kLITlbzeFcratbJJvbjzmkH0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "89932385054-0gdfsvmmh6qn2ot4resd3md49evk1lc1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

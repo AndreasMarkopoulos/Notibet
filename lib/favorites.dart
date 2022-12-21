@@ -18,21 +18,21 @@ class _FavoritesPageState extends State<FavoritesPage> {
   List<String> favorites = [];
 
   Future<String> getId(String firstname,String lastname) async {
-    String jsonString = await rootBundle.loadString('playersById.json');
+    String jsonString = await rootBundle.loadString('assets/playersById.json');
     Map<String, dynamic> jsonData = jsonDecode(jsonString);
 
     // Assuming the JSON file has an array of objects with the keys "name" and "id"
     List<dynamic> objects = jsonData['objects'];
 
     for (var object in objects) {
-      if (object['firstname'] == firstname && object['lastname'] == lastname) {
+      if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
+        debugPrint('found:'+object["firstname"]+object["lastname"]+' with id:'+object["id"]);
         return object['id'];
       }
     }
     return 'not_found';
   }
   var ids;
-  // var headshots;
 
   @override
   void initState(){
@@ -42,15 +42,15 @@ class _FavoritesPageState extends State<FavoritesPage> {
   late List<dynamic> headshots;
   late List<dynamic> favs = [];
   Future<List<dynamic>> fetchFavoriteData() async {
-    // for(var i = 0; i<favorites.length-1;i++){
-    for(int i=0; i<favorites.length;i++){
-      for(int i=0; i<favorites.length;i++){
+    int i = 0;
+      while(i<favorites.length+1){
+        debugPrint('iteration: '+i.toString()+" out of "+(favorites.length-1).toString());
         ids[i]=getId(favorites[i].split("*")[1], favorites[i].split("*")[2]);
+        debugPrint(ids[i]);
         headshots[i]='https://cdn.nba.com/headshots/nba/latest/1040x760/${ids[i]}.png';
         debugPrint(headshots[i]);
+        i++;
       }
-    }
-    // }
     debugPrint(favs.toString());
     return headshots;
   }

@@ -28,7 +28,7 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     match = widget.match;
     teams = widget.teams;
   }
-  List<String> favorites = FavoritePreferences.getFavorites();
+  List<String>? favorites = FavoritePreferences.getFavorites();
   late Map<String, dynamic> team1Data;
   late Map<String, dynamic> team2Data;
   late List<dynamic> team1;
@@ -171,8 +171,9 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
   void addToFavorites(id,firstname,lastname,index,homeTeamLength){
     debugPrint(FavoritePreferences.getFavorites().toString());
     favorites = FavoritePreferences.getFavorites();
+    List<String> nonNullFavorites = favorites ?? [];
     // if(favorites==null) favorites = [];
-    if(favorites.contains(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["home"]["logo"]) || favorites.contains(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["visitors"]["logo"])){
+    if(nonNullFavorites.contains(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["home"]["logo"]) || nonNullFavorites.contains(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["visitors"]["logo"])){
       final alreadyAdded = SnackBar(
         backgroundColor: Color(0xaa808080),
         duration: const Duration(seconds: 1),
@@ -189,19 +190,20 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
       ScaffoldMessenger.of(context).showSnackBar(alreadyAdded);
     }
     else {
+      List<String> nonNullFavorites = favorites ?? [];
       if(index <  homeTeamLength){
         setState(() {
-          favorites.add(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["home"]["logo"]);
-          FavoritePreferences.setFavorites(favorites);
+          favorites?.add(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["home"]["logo"]);
+          FavoritePreferences.setFavorites(nonNullFavorites);
         });
       }
       else{
         setState(() {
-          favorites.add(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["visitors"]["logo"]+"*"+teams["visitors"]["id"].toString());
-          FavoritePreferences.setFavorites(favorites);
+          favorites?.add(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["visitors"]["logo"]+"*"+teams["visitors"]["id"].toString());
+          FavoritePreferences.setFavorites(nonNullFavorites);
         });
       }
-      FavoritePreferences.setFavorites(favorites);
+      FavoritePreferences.setFavorites(nonNullFavorites);
       final favoriteAdded = SnackBar(
         backgroundColor: Color(0xaa69BD8D),
         duration: const Duration(seconds: 1),

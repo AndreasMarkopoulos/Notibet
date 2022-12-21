@@ -1,45 +1,16 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_project/favorite_prefs.dart';
 import 'package:flutter_project/picks_prefs.dart';
 import 'package:http/http.dart' as http;
-import 'dart:math';
+
+import 'notification.dart';
 
 int picksCount = 4;
 int thisPicksCount = 3;
-
-class Pick {
-  String gameId;
-  String gameStatus;
-  String player;
-  String homeLogo;
-  String visitorLogo;
-  Goal goals;
-
-  Pick(this.gameId,this.gameStatus,this.player,this.homeLogo,this.visitorLogo,this.goals);
-
-  int get pickStatus {
-    int status = gameStatus!='Finished' ? 0 : (goals.percentage<1 ? -1 : 1);
-    return status;
-  }
-}
-
-class Goal {
-  String stat;
-  String overUnder;
-  String line;
-  String current='0';
-
-  Goal(this.stat,this.line,this.overUnder,this.current);
-
-  double get percentage {
-    // debugPrint(line+current);
-    return int.parse(current)/(int.parse(line)+1);
-  }
-}
 
 class APIService {
   // API key
@@ -72,6 +43,7 @@ class MyPicksPage extends StatefulWidget {
   const MyPicksPage({Key? key}) : super(key: key);
 
   @override
+
   State<MyPicksPage> createState() => _MyPicksPageState();
 }
 
@@ -81,35 +53,33 @@ class _MyPicksPageState extends State<MyPicksPage> {
   late List<dynamic> players;
   late List<dynamic> playerData;
   late List<dynamic> game;
-  var picks =FavoritePreferences.getPicks();
   late List<Pick> picksList = [];
   var livePickedGames = [];
   var liveGamePlayers = [];
   List<String> liveGamePlayerPick = [];
   // axios.get(player/statistics/gameId
-  createData(){
+  createData() async {
+    var picks = await getList();
     if(picks==null || picks.length==0) return;
     livePickedGames = [];
     liveGamePlayers = [];
-    liveGamePlayerPick = [];
-    debugPrint(FavoritePreferences.getPicks()[0]);
+
     picks.forEach((item){
-      var fields=item.split("*");
-      var pickFields = fields[4].split("#");
-      if(DateTime.parse(fields[1]).toLocal().isBefore(DateTime.now())){
-        livePickedGames.add(fields[0]);
-      }
-      for(int i=0;i<pickFields.length;i++){
-        if(DateTime.parse(fields[1]).toLocal().isBefore(DateTime.now())){
-          liveGamePlayers.add(pickFields[i].split(',')[0]+"^"+pickFields[i].split('&')[1]);
+      if(DateTime.parse(item.startDate).toLocal().isBefore(DateTime.now())){
+        if(!livePickedGames.contains(item.gameId)){
+          livePickedGames.add(item.gameId);
         }
-        picksList.add(Pick(fields[0],'?',pickFields[i].split('&')[0],fields[2],fields[3],Goal(pickFields[i].split('&')[1],pickFields[i].split('&')[3],pickFields[i].split('&')[2].split(".")[1],0.toString())));
+        liveGamePlayers.add(item.playerId+'^'+item.goals.stat);
       }
     });
-    return picksList;
+    picksList=picks;
+    return picks;
   }
 
   Future<List<dynamic>> fetchData() async {
+    await createData();
+    debugPrint(livePickedGames.length.toString());
+    debugPrintAllPicks();
     for(int i=0;i<livePickedGames.length;i++){
       final pickData = await APIService().get(endpoint:'/players/statistics', query:{"game":livePickedGames[i]});
       final playerData = pickData["response"];
@@ -118,6 +88,9 @@ class _MyPicksPageState extends State<MyPicksPage> {
       for(int d=0;d<picksList.length;d++){
         if(picksList[d].gameId==game['id'].toString()){
           picksList[d].gameStatus=game['status']['long'];
+          picksList[d].period=game['periods']['current']==null ? 0.toString() : game['periods']['current'].toString();
+          picksList[d].isPeriodActive=game['periods']['endOfPeriod']==null ? 0.toString() : game['periods']['endOfPeriod'];
+          picksList[d].clock=game['status']['clock']==null ? 0.toString() :game['status']['clock'];
         }
       }
       // debugPrint(picksList[i].gameStatus);
@@ -125,26 +98,26 @@ class _MyPicksPageState extends State<MyPicksPage> {
       for(int k=0;k<playerData.length;k++){
         for(int m=0;m<liveGamePlayers.length;m++){
           if(liveGamePlayers[m].split("^")[0]==playerData[k]["player"]["id"].toString() && liveGamePlayers[m].split("^")[1]=='Points'){
-            pickIndex=picksList.indexWhere((pick) => pick.player.split(',')[0]==liveGamePlayers[m].split("^")[0] && liveGamePlayers[m].split("^")[1]=='Points');
+            pickIndex=picksList.indexWhere((pick) => pick.playerId==liveGamePlayers[m].split("^")[0] && liveGamePlayers[m].split("^")[1]=='Points');
             if(pickIndex>=0) {
               picksList[pickIndex].goals.current=playerData[k]["points"].toString();
             }
           }
           if(liveGamePlayers[m].split("^")[0]==playerData[k]["player"]["id"].toString() && liveGamePlayers[m].split("^")[1]=='Assists'){
-            pickIndex=picksList.indexWhere((pick) => pick.player.split(',')[0]==liveGamePlayers[m].split("^")[0] && pick.goals.stat=='Assists');
+            pickIndex=picksList.indexWhere((pick) => pick.playerId.split(',')[0]==liveGamePlayers[m].split("^")[0] && pick.goals.stat=='Assists');
             if(pickIndex>=0) {
               picksList[pickIndex].goals.current=playerData[k]["assists"].toString();
             }
           }
           if(liveGamePlayers[m].split("^")[0]==playerData[k]["player"]["id"].toString() && liveGamePlayers[m].split("^")[1]=='Rebounds'){
-            pickIndex=picksList.indexWhere((pick) => pick.player.split(',')[0]==liveGamePlayers[m].split("^")[0] && pick.goals.stat=='Rebounds');
+            pickIndex=picksList.indexWhere((pick) => pick.playerId.split(',')[0]==liveGamePlayers[m].split("^")[0] && pick.goals.stat=='Rebounds');
             if(pickIndex>=0) {
               picksList[pickIndex].goals.current=playerData[k]["totReb"].toString();
             }
           }
           if(liveGamePlayers[m].split("^")[0]==playerData[k]["player"]["id"].toString() && liveGamePlayers[m].split("^")[1]=='Three Pointers'){
             debugPrint('found');
-            pickIndex=picksList.indexWhere((pick) => pick.player.split(',')[0]==liveGamePlayers[m].split("^")[0] && pick.goals.stat=='Three Pointers');
+            pickIndex=picksList.indexWhere((pick) => pick.playerId.split(',')[0]==liveGamePlayers[m].split("^")[0] && pick.goals.stat=='Three Pointers');
             if(pickIndex>=0) {
               picksList[pickIndex].goals.current=playerData[k]["tpm"].toString();
             }
@@ -156,18 +129,19 @@ class _MyPicksPageState extends State<MyPicksPage> {
     final players = picksList;
     return players;
   }
+
   @override
-  void initState(){
-    picks =FavoritePreferences.getPicks();
+  void initState() {
     createData();
     fetchData();
     Timer timer = Timer.periodic(Duration(seconds: 15), (Timer t) => setState((){}));
+
   }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: TextButton(child:Text('My Picks',style: TextStyle(color: Colors.white),) ,onPressed: (){FavoritePreferences.setPicks([]);},),
+        title: TextButton(child:Text('My Picks',style: TextStyle(color: Colors.white),) ,onPressed: (){saveList([]);},),
       ),
       body: FutureBuilder(
           future:  fetchData(),
@@ -205,34 +179,10 @@ class _MyPicksPageState extends State<MyPicksPage> {
                       ),
                       key: Key(''),
                       onDismissed: (direction){
-                        var snapshotData = snapshot.data[index];
                         snapshot.data.removeAt(index);
-                        List<String>allPicks = FavoritePreferences.getPicks();
-                        String newa = '';
-                        int pickIndex = allPicks.indexWhere((pick) => pick.contains(snapshotData.homeLogo));
-                        debugPrint((allPicks[pickIndex].split('*')[4].split('#').contains(snapshotData.player.toString()+'&'+snapshotData.goals.stat+'&'+'overUnder.'+snapshotData.goals.overUnder+'&'+snapshotData.goals.line)).toString());
-                        if(allPicks[pickIndex].split('*')[4].split('#').contains(snapshotData.player.toString()+'&'+snapshotData.goals.stat+'&'+'overUnder.'+snapshotData.goals.overUnder+'&'+snapshotData.goals.line)){
-                          debugPrint('here!!');
-                          if(allPicks[pickIndex].split('*')[4].split('#').length==1){
-                            debugPrint('ysese');
-                            allPicks.removeAt(pickIndex);
-                            FavoritePreferences.setPicks(allPicks);
-                          }
-                          else{
-                            // debugPrint(allPicks[pickIndex].toString());
-                            List<String> selPick = allPicks[pickIndex].split('*')[4].split('#');
-                            // debugPrint(allPicks[pickIndex].toString());
-                            debugPrint('here!');
-                            selPick.remove(snapshotData.player.toString()+'&'+snapshotData.goals.stat+'&'+"overUnder."+snapshotData.goals.overUnder+'&'+snapshotData.goals.line);
-                            for(int i=0;i<selPick.length;i++){
-                              newa = newa+selPick[i];
-                              if(i<selPick.length-1)newa = newa+'#';
-                            }
-                            allPicks[pickIndex]=allPicks[pickIndex].split('*')[0]+'*'+allPicks[pickIndex].split('*')[1]+'*'+allPicks[pickIndex].split('*')[2]+'*'+allPicks[pickIndex].split('*')[3]+'*'+newa;
-                          }
-                          debugPrint(allPicks[pickIndex].toString());
-                          FavoritePreferences.setPicks(allPicks);
-                        }
+                        saveList(snapshot.data);
+                        debugPrintAllPicks();
+                        debugPrint(picksList.toString());
                       },
                       child: snapshot.data.length>index ?
                       Padding(
@@ -243,7 +193,6 @@ class _MyPicksPageState extends State<MyPicksPage> {
                             ),
                             elevation: 3,
                               child: Container(
-                                // color:(int.parse(snapshot.data[index].goals.current)/(int.parse(snapshot.data[index].goals.line)+1) >= 1) ? Color(0xffeefbf2) : ( snapshot.data[index].gameStatus=='Finished' ? Color(0xfffef1f4) : Theme.of(context).scaffoldBackgroundColor),
                                 padding: const EdgeInsets.fromLTRB(0, 0,0, 0),
                                 child: Column(children: [
                                   Column(children: [
@@ -251,7 +200,16 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                       title: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(snapshot.data[index].player.split(',')[1]+" "+snapshot.data[index].player.split(',')[2],style: TextStyle(fontWeight: FontWeight.w300 ,),),
+                                          Row(
+                                            children: [
+                                              CircleAvatar(
+                                                backgroundImage:NetworkImage(snapshot.data[index].headshot) ,
+                                                backgroundColor: Colors.white,
+                                              ),
+                                              Container(width: 10,),
+                                              Text(snapshot.data[index].firstname+" "+snapshot.data[index].lastname,style: TextStyle(fontWeight: FontWeight.w300 ,),),
+                                            ],
+                                          ),
                                           Container(
                                             decoration: BoxDecoration(
                                               // color: Colors.orange[50],
@@ -270,9 +228,36 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                       ),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.fromLTRB(15,0,10,5),
+                                      padding: EdgeInsets.fromLTRB(0, 0, 24, 5),
+                                      child: snapshot.data[index].gameStatus=='In Play' ? Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Container(),
+                                           Row(
+                                            children: [
+                                              DotsIndicator(
+                                                  dotsCount: 4,
+                                                // position: double.parse(snapshot.data[index].period)+1,
+                                                position: double.parse(snapshot.data[index].period)-1,
+                                                decorator: DotsDecorator(
+                                                  color: Colors.black26, // Inactive color
+                                                  activeColor: Colors.redAccent[100],
+                                                  spacing: EdgeInsets.all(3),
+                                                  size: Size.square(5),
+                                                  activeSize: Size.square(5),
+                                                ),
+                                              ),
+                                              snapshot.data[index].isPeriodActive ? Text(' --',style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.w500)) :Text("  "+snapshot.data[index].clock.split(":")[0]+"'",style: TextStyle(color: Colors.redAccent,fontWeight: FontWeight.w500),)
+                                            ],
+                                          ),
+                                        ],
+                                      ) : Container(),
+                                    ),
+                                    Container(height: 1,color: Colors.black12,),
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(15,15,10,5),
                                       child: Row(
-                                        children: [Text(snapshot.data[index].goals.stat)],
+                                        children: [Text(capitalize(snapshot.data[index].goals.overUnder)+" "+snapshot.data[index].goals.line,style: TextStyle(fontWeight: FontWeight.w500),)],
                                       ),
                                     ),
                                     Padding(
@@ -280,8 +265,8 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                       child: Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children:[
+                                          Text(snapshot.data[index].goals.stat),
 
-                                          Text(capitalize(snapshot.data[index].goals.overUnder)+" "+snapshot.data[index].goals.line,style: TextStyle(fontWeight: FontWeight.w500),),
                                           Padding(
                                             padding: const EdgeInsets.fromLTRB(10,10,15,0),
                                             child: Row(
@@ -289,7 +274,8 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                 (snapshot.data[index].goals.percentage <1) ? Padding(
                                                   padding: snapshot.data[index].pickStatus==-1 ? const EdgeInsets.fromLTRB(0,0,10,0) : const EdgeInsets.fromLTRB(0,0,27,0),
                                                   child: Text(snapshot.data[index].goals.current+" / "+(int.parse(snapshot.data[index].goals.line)+1).toString(),style: snapshot.data[index].gameStatus=='Finished' ? TextStyle(color: Colors.black26) : TextStyle(),),
-                                                ) : Icon(Icons.check_circle,color: Color(0xff42c256),size: 17,),
+                                                )
+                                                    : Icon(Icons.check_circle,color: Color(0xff42c256),size: 17,),
                                                 snapshot.data[index].pickStatus==-1 ? Icon(Icons.cancel,color: Color(0xfff0506e),size: 17,) : Container(),
                                               ],
                                             ),
@@ -301,7 +287,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                       height: 2,
                                       child: LinearProgressIndicator(
                                         value: snapshot.data[index].goals.percentage,
-                                        color: snapshot.data[index].pickStatus==-1 ? Color(0xfff0506e) : Color(0x7742c256),
+                                        color: snapshot.data[index].goals.overUnder == 'over' ? (snapshot.data[index].pickStatus==-1 ? Color(0xfff0506e) : Color(0x7742c256)) : (snapshot.data[index].pickStatus==-1 ? Color(0xfff0506e) : Color(0x77f2d700)),
                                         backgroundColor: Color(0x1142c256),
                                       ),
                                     ),

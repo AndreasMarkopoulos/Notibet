@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_project/favorite_prefs.dart';
+import 'package:flutter_project/notification.dart';
+import 'package:flutter_project/picks_prefs.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 class AddPickPage extends StatefulWidget {
@@ -158,27 +163,30 @@ class _AddPickPageState extends State<AddPickPage> {
       ),
     );
   }
-  void addPick(match,player){
-    var picks = FavoritePreferences.getPicks();
-    if(picks==null) picks=[];
-    bool matchExists=false;
-    var matchIndex;
-    picks.forEach((item) {
-      if(item.contains(match["id"].toString())){
-        matchExists = true;
-        matchIndex=picks.indexOf(item);
+  void addPick(match,player) async {
+    debugPrint('HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+    debugPrint(getList().toString());
+    debugPrint(player['id'].toString());
+    String nbaId = await getId(player["firstname"], player["lastname"]);
+    debugPrint('https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png');
+    String headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png');
+    addToList(Pick(match["id"].toString(),'','',false,'',match["date"]["start"],player["id"].toString(),player["firstname"],player["lastname"],headshot,match["teams"]["home"]["logo"],match["teams"]["visitors"]["logo"],Goal(_dbSelection,_ouSelection.toString().split('.')[1],_lineSelection.toString(),0.toString())));
+    var list = await getList();
+    debugPrintAllPicks();
+  }
+  Future<String> getId(String firstname,String lastname) async {
+    String jsonString = await rootBundle.loadString('assets/playersById.json');
+    Map<String, dynamic> jsonData = jsonDecode(jsonString);
+
+    // Assuming the JSON file has an array of objects with the keys "name" and "id"
+    List<dynamic> objects = jsonData['objects'];
+
+    for (var object in objects) {
+      if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
+        debugPrint('found:'+object["firstname"]+object["lastname"]+' with id:'+object["id"]);
+        return object['id'];
       }
-    });
-    if(matchExists==false){
-      picks.add(match["id"].toString()+'*'+match["date"]["start"]+"*"+match["teams"]["home"]["logo"]+"*"+match["teams"]["visitors"]["logo"]+'*'+player["id"].toString()+','+player["firstname"]+","+player["lastname"]+'&'+_dbSelection+"&"+_ouSelection.toString()+"&"+_lineSelection.toString());
     }
-    else{
-      if(!picks.contains(player["id"]))
-      picks[matchIndex]=picks[matchIndex]+"#"+player["id"].toString()+','+player["firstname"]+","+player["lastname"]+'&'+_dbSelection+"&"+_ouSelection.toString()+"&"+_lineSelection.toString();
-
-    }
-
-    FavoritePreferences.setPicks(picks);
-    debugPrint("PICKS!!!!"+picks.toString());
+    return 'not_found';
   }
 }
