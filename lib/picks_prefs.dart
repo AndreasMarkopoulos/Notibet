@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
@@ -16,9 +18,11 @@ class Pick {
   String headshot;
   String homeLogo;
   String visitorLogo;
+  bool isNotificationEnabled;
+  bool isPinned;
   Goal goals;
 
-  Pick(this.gameId, this.gameStatus,this.period,this.isPeriodActive,this.clock, this.startDate, this.playerId, this.firstname,this.lastname,this.headshot, this.homeLogo, this.visitorLogo, this.goals);
+  Pick(this.gameId, this.gameStatus,this.period,this.isPeriodActive,this.clock, this.startDate, this.playerId, this.firstname,this.lastname,this.headshot, this.homeLogo, this.visitorLogo,this.isNotificationEnabled,this.isPinned,this.goals);
 
   int get pickStatus {
     int status;
@@ -44,6 +48,8 @@ class Pick {
     'headshot': headshot,
     'homeLogo': homeLogo,
     'visitorLogo': visitorLogo,
+    'isNotificationEnabled': isNotificationEnabled,
+    'isPinned': isPinned,
     'goals': goals.toJson(),
   };
 
@@ -60,6 +66,8 @@ class Pick {
     json['headshot'],
     json['homeLogo'],
     json['visitorLogo'],
+    json['isNotificationEnabled'],
+    json['isPinned'],
     Goal.fromJson(json['goals']),
   );
 }
@@ -91,12 +99,13 @@ class Goal {
   );
 }
 
-void saveList(List<Pick> list) async {
+Future<int> saveList(List<Pick> list) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   List<Map<String, dynamic>> jsonList =
   list.map((item) => item.toJson()).toList();
   String jsonString = jsonEncode(jsonList);
   prefs.setString('my_list', jsonString);
+  return 1;
 }
 
 Future<List<Pick>> getList() async {
@@ -134,6 +143,8 @@ Future<void> debugPrintAllPicks() async {
     debugPrint('headshot: ${pick.headshot}');
     debugPrint('homeLogo: ${pick.homeLogo}');
     debugPrint('visitorLogo: ${pick.visitorLogo}');
+    debugPrint('isNotificationEnabled: ${pick.isNotificationEnabled.toString()}');
+    debugPrint('isPinned: ${pick.isPinned.toString()}');
     debugPrint('goals: ${pick.goals}');
     debugPrint('   stat: ${pick.goals.stat}');
     debugPrint('   overUnder: ${pick.goals.overUnder}');

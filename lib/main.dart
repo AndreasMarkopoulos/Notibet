@@ -1,8 +1,7 @@
+import 'dart:async';
 import 'dart:math';
-
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_project/favorites.dart';
 import 'package:flutter_project/home_page.dart';
@@ -10,8 +9,6 @@ import 'package:flutter_project/my_picks_page.dart';
 import 'package:flutter_project/favorite_prefs.dart';
 import 'package:flutter_project/palette.dart';
 import 'package:workmanager/workmanager.dart';
-
-import 'firebase_options.dart';
 import 'notification.dart';
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =  FlutterLocalNotificationsPlugin();
@@ -21,19 +18,22 @@ void callbackDispatcher() {
   Workmanager().executeTask((fetchBackground, inputData) async {
     switch (fetchBackground) {
       case 'fetchBackground':
-        debugPrint('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-        FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =  FlutterLocalNotificationsPlugin();
-        const AndroidInitializationSettings initializationSettingsAndroid =
-        AndroidInitializationSettings('mipmap/ic_launcher');
-        final InitializationSettings initializationSettings = InitializationSettings(
-            android: initializationSettingsAndroid);
-        bool pick = true;
-        var id = new DateTime.now().toString();
-        if(pick)
-        Noti.showNotification(id:id,title: 'hello1', body: "body1", fln: flutterLocalNotificationsPlugin);
-        if(!pick)
-        Noti.showNotification(title: 'hello2', body: "body2", fln: flutterLocalNotificationsPlugin);
-    }
+        const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+        Random _rnd = Random();
+        String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
+            length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+        var initializationSettings = InitializationSettings();
+        await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+        AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
+          'example',
+          'channel_name',
+          playSound: true,
+          importance: Importance.max,
+          priority: Priority.high,
+        );
+
+        var not = NotificationDetails(android: androidPlatformChannelSpecifics);
+        await flutterLocalNotificationsPlugin.show(0,getRandomString(5),getRandomString(5),not);    }
     return Future.value(true);
   });
 }
@@ -48,11 +48,18 @@ Future<void> main() async {
       android: initializationSettingsAndroid);
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-  await Workmanager().initialize(
-      callbackDispatcher, // The top level function, aka callbackDispatcher
-      isInDebugMode: true // If enabled it will post a notification whenever the task is running. Handy for debugging tasks
+  final androidConfig = FlutterBackgroundAndroidConfig(
+    notificationTitle: "flutter_background example app",
+    notificationText: "Background notification for keeping the example app running in the background",
+    notificationImportance: AndroidNotificationImportance.Default,
+    notificationIcon: AndroidResource(name: 'background_icon', defType: 'drawable'), // Default is ic_launcher from folder mipmap
   );
-  Workmanager().registerOneOffTask("fetchBackground", "fetchBackground");
+  bool success = await FlutterBackground.initialize(androidConfig: androidConfig);
+  bool running = await FlutterBackground.enableBackgroundExecution();
+  if(running){
+    // Timer timer = Timer.periodic(Duration(seconds: 15), (Timer t) =>  sendNotification('Kevin Durrant points pick successful!', '30 points achieved by Kevin Durrant', flutterLocalNotificationsPlugin)
+    // );
+  }
   runApp(const MyApp());
 
 }
@@ -108,11 +115,13 @@ class _RootPageState extends State<RootPage> {
               ],
             ),
             ElevatedButton(onPressed: () async {
-              const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-              Random _rnd = Random();
-              String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
-                  length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
-              sendNotification(getRandomString(5),'kseplen',flutterLocalNotificationsPlugin);
+              // Workmanager().registerOneOffTask("fetchBackground", "fetchBackground");
+              Workmanager().registerPeriodicTask("fetchBackground", "fetchBackground",frequency: Duration(seconds: 5));
+              // const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
+              // Random _rnd = Random();
+              // String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
+              //     length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
+              // sendNotification(getRandomString(5),'kseplen',flutterLocalNotificationsPlugin);
             }, child: Text('hi',style: TextStyle(color: Colors.white),))
           ],
         ),
