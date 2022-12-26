@@ -27,7 +27,8 @@ class Pick {
   int get pickStatus {
     int status;
     if(goals.overUnder=='over'){
-      status = gameStatus != 'Finished' ? 0 : (goals.percentage < 1 ? -1 : 1);
+      status = (gameStatus == 'Finished' && goals.percentage<1) ? -1 : (goals.percentage<1 ? 0 : 1);
+      // status = (gameStatus == 'Finished') ? 0 : ((goals.percentage < 1) ? -1 : 1);
     }
     else{
       status = goals.percentage > 1 ? -1 : (gameStatus == 'Finished' ? 1 : 0);
@@ -76,7 +77,7 @@ class Goal {
   String stat;
   String overUnder;
   String line;
-  String current = '0';
+  String current;
 
   Goal(this.stat,this.overUnder, this.line, this.current);
 
@@ -132,6 +133,7 @@ Future<void> debugPrintAllPicks() async {
     debugPrint('Pick $i:');
     debugPrint('--------------------------');
     debugPrint('gameId: ${pick.gameId}');
+    debugPrint('pickStatus: ${pick.pickStatus}');
     debugPrint('gameStatus: ${pick.gameStatus}');
     debugPrint('startDate: ${pick.startDate}');
     debugPrint('period: ${pick.period}');
@@ -149,6 +151,8 @@ Future<void> debugPrintAllPicks() async {
     debugPrint('   stat: ${pick.goals.stat}');
     debugPrint('   overUnder: ${pick.goals.overUnder}');
     debugPrint('   line: ${pick.goals.line}');
+    debugPrint('   current: ${pick.goals.current}');
+    debugPrint('   percentage: ${pick.goals.percentage}');
     debugPrint('--------------------------');
   }
 }

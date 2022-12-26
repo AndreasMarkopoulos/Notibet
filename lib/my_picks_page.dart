@@ -79,7 +79,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
   Future<List<dynamic>> fetchData() async {
     await createData();
     debugPrint(livePickedGames.length.toString());
-    debugPrintAllPicks();
+    // debugPrintAllPicks();
     for (int i = 0; i < livePickedGames.length; i++) {
       final pickData = await APIService().get(
           endpoint: '/players/statistics', query: {"game": livePickedGames[i]});
@@ -101,57 +101,23 @@ class _MyPicksPageState extends State<MyPicksPage> {
               : game['status']['clock'];
         }
       }
+
       // debugPrint(picksList[i].gameStatus);
       int pickIndex;
+      debugPrint(liveGamePlayers.toString());
       for (int k = 0; k < playerData.length; k++) {
         for (int m = 0; m < liveGamePlayers.length; m++) {
-          if (liveGamePlayers[m].split("^")[0] ==
-                  playerData[k]["player"]["id"].toString() &&
-              liveGamePlayers[m].split("^")[1] == 'Points') {
-            pickIndex = picksList.indexWhere((pick) =>
-                pick.playerId == liveGamePlayers[m].split("^")[0] &&
-                liveGamePlayers[m].split("^")[1] == 'Points');
-            if (pickIndex >= 0) {
-              picksList[pickIndex].goals.current =
-                  playerData[k]["points"].toString();
-            }
+          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Points') {
+              picksList[m].goals.current = playerData[k]["points"].toString();
           }
-          if (liveGamePlayers[m].split("^")[0] ==
-                  playerData[k]["player"]["id"].toString() &&
-              liveGamePlayers[m].split("^")[1] == 'Assists') {
-            pickIndex = picksList.indexWhere((pick) =>
-                pick.playerId.split(',')[0] ==
-                    liveGamePlayers[m].split("^")[0] &&
-                pick.goals.stat == 'Assists');
-            if (pickIndex >= 0) {
-              picksList[pickIndex].goals.current =
-                  playerData[k]["assists"].toString();
-            }
+          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Assists') {
+              picksList[m].goals.current = playerData[k]["assists"].toString();
           }
-          if (liveGamePlayers[m].split("^")[0] ==
-                  playerData[k]["player"]["id"].toString() &&
-              liveGamePlayers[m].split("^")[1] == 'Rebounds') {
-            pickIndex = picksList.indexWhere((pick) =>
-                pick.playerId.split(',')[0] ==
-                    liveGamePlayers[m].split("^")[0] &&
-                pick.goals.stat == 'Rebounds');
-            if (pickIndex >= 0) {
-              picksList[pickIndex].goals.current =
-                  playerData[k]["totReb"].toString();
-            }
+          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Rebounds') {
+              picksList[m].goals.current = playerData[k]["totReb"].toString();
           }
-          if (liveGamePlayers[m].split("^")[0] ==
-                  playerData[k]["player"]["id"].toString() &&
-              liveGamePlayers[m].split("^")[1] == 'Three Pointers') {
-            debugPrint('found');
-            pickIndex = picksList.indexWhere((pick) =>
-                pick.playerId.split(',')[0] ==
-                    liveGamePlayers[m].split("^")[0] &&
-                pick.goals.stat == 'Three Pointers');
-            if (pickIndex >= 0) {
-              picksList[pickIndex].goals.current =
-                  playerData[k]["tpm"].toString();
-            }
+          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Three Pointers') {
+              picksList[m].goals.current = playerData[k]["tpm"].toString();
           }
         }
       }
@@ -217,31 +183,32 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                           padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
                                           child: Row(
                                             children: [
-                                              GestureDetector(
-                                                onTap: () async {
-                                                  snapshot.data[index].isPinned = !snapshot.data[index].isPinned;
-                                                  !snapshot.data[index].isPinned ? saveList(rearrangePick(snapshot.data, index, 'unpin')) : saveList(rearrangePick(snapshot.data, index, 'pin'));
-                                                  setState(() {});
-                                                },
-                                                child: !snapshot.data[index].isPinned
-                                                    ? Transform.rotate(
-                                                  angle: 40* math.pi/180,
-                                                      child: Icon(
-                                                          Icons.push_pin_outlined,
-                                                          color: Color(0xff686b70),
-                                                          size: 20,
-                                                        ),
-                                                    )
-                                                    : Transform.rotate(
-                                                  angle: 40* math.pi/180,
-                                                      child: Icon(
-                                                          Icons.push_pin,
-                                                          color: Color(0xff686b70),
-                                                          size: 20,
-                                                        ),
-                                                    ),
-                                              ),
-                                              Container(width: 5,),
+                                              // GestureDetector(
+                                              //   onTap: () async {
+                                              //     snapshot.data[index].isPinned = !snapshot.data[index].isPinned;
+                                              //     !snapshot.data[index].isPinned ? saveList(rearrangePick(snapshot.data, index, 'unpin')) : saveList(rearrangePick(snapshot.data, index, 'pin'));
+                                              //     setState(() {});
+                                              //   },
+                                              //   child: !snapshot.data[index].isPinned
+                                              //       ? Transform.rotate(
+                                              //     angle: 40* math.pi/180,
+                                              //         child: Icon(
+                                              //             Icons.push_pin_outlined,
+                                              //             color: Color(0xff686b70),
+                                              //             size: 20,
+                                              //           ),
+                                              //       )
+                                              //       : Transform.rotate(
+                                              //     angle: 40* math.pi/180,
+                                              //         child: Icon(
+                                              //             Icons.push_pin,
+                                              //             color: Color(0xff686b70),
+                                              //             size: 20,
+                                              //           ),
+                                              //       ),
+                                              // ),
+                                              // Container(width: 5,),
+                                              // snapshot.data[index].pickStatus==0 ?
                                               GestureDetector(
                                                 onTap: () {
                                                   snapshot.data[index].isNotificationEnabled = !snapshot.data[index].isNotificationEnabled;
@@ -260,7 +227,8 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                         color: Color(0xfff2d03b),
                                                         size: 20,
                                                       ),
-                                              ),
+                                              )
+                                                  // : Container(height: 20,),
 
                                             ],
                                           ),
@@ -277,7 +245,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                 // debugPrint(picksList.toString());
                                               },
                                               child: Icon(Icons.cancel_outlined,color: Color(0xff686b70),
-                                                size: 20,),
+                                                size: 17,),
                                             ),
                                             Container(width: 6,)
                                           ],
@@ -456,16 +424,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                       10, 10, 15, 0),
                                               child: Row(
                                                 children: [
-                                                  (snapshot.data[index].goals
-                                                              .percentage <
-                                                          1)
-                                                      ? Padding(
-                                                          padding: snapshot
-                                                                      .data[
-                                                                          index]
-                                                                      .pickStatus ==
-                                                                  -1
-                                                              ? const EdgeInsets
+                                                  (snapshot.data[index].goals.percentage < 1) ? Padding(padding: snapshot.data[index].pickStatus ==-1                                                              ? const EdgeInsets
                                                                       .fromLTRB(
                                                                   0, 0, 10, 0)
                                                               : const EdgeInsets
@@ -610,6 +569,11 @@ class _MyPicksPageState extends State<MyPicksPage> {
               ),
               child: const Text('Ok'),
               onPressed: () {
+                data.removeAt(index);
+                saveList(data);
+                setState(() {
+
+                });
                 Navigator.of(context).pop();
               },
             ),
