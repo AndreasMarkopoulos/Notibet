@@ -26,7 +26,6 @@ class _FavoritesPageState extends State<FavoritesPage> {
 
     for (var object in objects) {
       if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
-        debugPrint('found:'+object["firstname"]+object["lastname"]+' with id:'+object["id"]);
         return object['id'];
       }
     }
@@ -44,14 +43,10 @@ class _FavoritesPageState extends State<FavoritesPage> {
   Future<List<dynamic>> fetchFavoriteData() async {
     int i = 0;
       while(i<favorites.length+1){
-        debugPrint('iteration: '+i.toString()+" out of "+(favorites.length-1).toString());
         ids[i]=getId(favorites[i].split("*")[1], favorites[i].split("*")[2]);
-        debugPrint(ids[i]);
         headshots[i]='https://cdn.nba.com/headshots/nba/latest/1040x760/${ids[i]}.png';
-        debugPrint(headshots[i]);
         i++;
       }
-    debugPrint(favs.toString());
     return headshots;
   }
   Widget build(BuildContext context) {

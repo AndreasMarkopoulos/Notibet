@@ -162,14 +162,12 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     setState(() {
       Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context)
       {
-        debugPrint('createPick:'+match.toString());
         return AddPickPage(player: player, match: match);
       }));
     });
   }
 
   void addToFavorites(id,firstname,lastname,index,homeTeamLength){
-    debugPrint(FavoritePreferences.getFavorites().toString());
     favorites = FavoritePreferences.getFavorites();
     List<String> nonNullFavorites = favorites ?? [];
     // if(favorites==null) favorites = [];

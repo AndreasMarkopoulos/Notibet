@@ -78,8 +78,6 @@ class _MyPicksPageState extends State<MyPicksPage> {
 
   Future<List<dynamic>> fetchData() async {
     await createData();
-    debugPrint(livePickedGames.length.toString());
-    // debugPrintAllPicks();
     for (int i = 0; i < livePickedGames.length; i++) {
       final pickData = await APIService().get(
           endpoint: '/players/statistics', query: {"game": livePickedGames[i]});
@@ -102,9 +100,6 @@ class _MyPicksPageState extends State<MyPicksPage> {
         }
       }
 
-      // debugPrint(picksList[i].gameStatus);
-      int pickIndex;
-      debugPrint(liveGamePlayers.toString());
       for (int k = 0; k < playerData.length; k++) {
         for (int m = 0; m < liveGamePlayers.length; m++) {
           if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Points') {
@@ -121,6 +116,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
           }
         }
       }
+      saveList(picksList);
     }
 
     final players = picksList;

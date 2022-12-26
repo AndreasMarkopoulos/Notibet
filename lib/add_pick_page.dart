@@ -164,11 +164,7 @@ class _AddPickPageState extends State<AddPickPage> {
     );
   }
   void addPick(match,player) async {
-    debugPrint('HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-    debugPrint(getList().toString());
-    debugPrint(player['id'].toString());
     String nbaId = await getId(player["firstname"], player["lastname"]);
-    debugPrint('https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png');
     String headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png');
     addToList(Pick(match["id"].toString(),'','',false,'',match["date"]["start"],player["id"].toString(),player["firstname"],player["lastname"],headshot,match["teams"]["home"]["logo"],match["teams"]["visitors"]["logo"],false,false,Goal(_dbSelection,_ouSelection.toString().split('.')[1],_lineSelection.toString(),0.toString())));
     var list = await getList();
@@ -183,7 +179,6 @@ class _AddPickPageState extends State<AddPickPage> {
 
     for (var object in objects) {
       if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
-        debugPrint('found:'+object["firstname"]+object["lastname"]+' with id:'+object["id"]);
         return object['id'];
       }
     }

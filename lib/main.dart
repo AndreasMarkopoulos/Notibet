@@ -96,8 +96,6 @@ createData() async {
 
 Future<List<dynamic>> fetchData() async {
   await createData();
-  debugPrint(livePickedGames.length.toString());
-  debugPrint('FROM MAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
   debugPrintAllPicks();
   for (int i = 0; i < livePickedGames.length; i++) {
     final pickData = await APIService().get(
@@ -121,15 +119,10 @@ Future<List<dynamic>> fetchData() async {
       }
     }
 
-    // debugPrint(picksList[i].gameStatus);
-    int pickIndex;
-    debugPrint(liveGamePlayers.toString());
     for (int k = 0; k < playerData.length; k++) {
       for (int m = 0; m < liveGamePlayers.length; m++) {
         if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Points') {
           picksList[m].goals.current = playerData[k]["points"].toString();
-          debugPrint('UPDATED!!!');
-          debugPrint(playerData[k]["points"].toString());
         }
         if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Assists') {
           picksList[m].goals.current = playerData[k]["assists"].toString();
@@ -154,9 +147,8 @@ checkPicks() async {
   await fetchData();
   var picks = await getList();
   for(int i=0; i<picks.length;i++){
-    debugPrint(picks[i].goals.current+'/'+picks[i].goals.line);
     if(picks[i].isNotificationEnabled && picks[i].pickStatus==1){
-      sendNotification('✅ Pick successful!', '${picks[i].firstname} ${picks[i].firstname} reached ${(int.parse(picks[i].goals.line)+1).toString()} ${picks[i].goals.stat}!', flutterLocalNotificationsPlugin);
+      sendNotification('✅ Pick successful!', '${picks[i].firstname} ${picks[i].lastname} reached ${picks[i].goals.current} ${picks[i].goals.stat}!', flutterLocalNotificationsPlugin);
       picks[i].isNotificationEnabled=false;
     }
   }
