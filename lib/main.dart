@@ -14,31 +14,6 @@ import 'notification.dart';
 import 'package:flutter_project/my_picks_page.dart';
 
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =  FlutterLocalNotificationsPlugin();
-//
-// const fetchBackground = "fetchBackground";
-// void callbackDispatcher() {
-//   Workmanager().executeTask((fetchBackground, inputData) async {
-//     switch (fetchBackground) {
-//       case 'fetchBackground':
-//         const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-//         Random _rnd = Random();
-//         String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
-//             length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
-//         var initializationSettings = InitializationSettings();
-//         await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-//         AndroidNotificationDetails androidPlatformChannelSpecifics = AndroidNotificationDetails(
-//           'example',
-//           'channel_name',
-//           playSound: true,
-//           importance: Importance.max,
-//           priority: Priority.high,
-//         );
-//
-//         var not = NotificationDetails(android: androidPlatformChannelSpecifics);
-//         await flutterLocalNotificationsPlugin.show(0,getRandomString(5),getRandomString(5),not);    }
-//     return Future.value(true);
-//   });
-// }
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -205,15 +180,6 @@ class _RootPageState extends State<RootPage> {
                 Text('tibet',style: TextStyle(letterSpacing: 2),)
               ],
             ),
-            ElevatedButton(onPressed: () async {
-              // Workmanager().registerOneOffTask("fetchBackground", "fetchBackground");
-              Workmanager().registerPeriodicTask("fetchBackground", "fetchBackground",frequency: Duration(seconds: 5));
-              // const _chars = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890';
-              // Random _rnd = Random();
-              // String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
-              //     length, (_) => _chars.codeUnitAt(_rnd.nextInt(_chars.length))));
-              // sendNotification(getRandomString(5),'kseplen',flutterLocalNotificationsPlugin);
-            }, child: Text('hi',style: TextStyle(color: Colors.white),))
           ],
         ),
       ),

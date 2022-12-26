@@ -5,6 +5,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
 
+class Favorite {
+  String playerId;
+  String firstname;
+  String lastname;
+  String headshot;
+  String teamId;
+  Favorite(this.playerId,this.firstname,this.lastname,this.headshot,this.teamId);
+
+  Map<String, dynamic> toJson() => {
+    'playerId': playerId,
+    'firstname': firstname,
+    'lastname': lastname,
+    'headshot': headshot,
+    'teamId': teamId,
+  };
+
+  static Favorite fromJson(Map<String, dynamic> json) => Favorite(
+    json['playerId'],
+    json['firstname'],
+    json['lastname'],
+    json['headshot'],
+    json['teamId'],
+  );
+}
+
 class Pick {
   String gameId;
   String gameStatus;
@@ -72,6 +97,32 @@ class Pick {
     Goal.fromJson(json['goals']),
   );
 }
+
+Future<int> saveFavorites(List<Favorite> list) async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  List<Map<String, dynamic>> jsonList =
+  list.map((item) => item.toJson()).toList();
+  String jsonString = jsonEncode(jsonList);
+  prefs.setString('my_favorites', jsonString);
+  return 1;
+}
+
+Future<List<Favorite>> getFavorites() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  String? jsonString = prefs.getString('my_favorites');
+  if (jsonString == null) {
+    return [];
+  }
+  List<dynamic> jsonList = jsonDecode(jsonString);
+  return jsonList.map((item) => Favorite.fromJson(item)).toList();
+}
+
+void addFavorite(Favorite fav) async {
+  List<Favorite> list = await getFavorites();
+  list.add(fav);
+  saveFavorites(list);
+}
+
 
 class Goal {
   String stat;

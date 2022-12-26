@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_project/picks_prefs.dart';
+import 'package:http/http.dart';
 import 'add_pick_page.dart';
 import 'favorite_prefs.dart';
 import 'my_picks_page.dart';
@@ -88,7 +93,9 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
                   itemCount: snapshot.data.length-1,
                   itemBuilder: (BuildContext context,index){
                     return GestureDetector(
-                      onTap: (){openOptionsModal(snapshot.data[index],snapshot.data[index]["id"],snapshot.data[index]["firstname"],snapshot.data[index]["lastname"],index,snapshot.data[snapshot.data.length-1]);},
+                      onTap: (){
+                        String teamId = index <  snapshot.data[snapshot.data.length-1] ? teams["home"]["id"].toString() : teams["visitors"]["id"].toString();
+                        openOptionsModal(snapshot.data[index],snapshot.data[index]["id"],snapshot.data[index]["firstname"],snapshot.data[index]["lastname"],index,snapshot.data[snapshot.data.length-1],teamId);},
                       child:Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         child: Row(
@@ -113,7 +120,18 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     );
   }
 
-  void openOptionsModal(Object player,id,firstname,lastname,index,homeTeamLength){
+  void openOptionsModal(Object player,id,firstname,lastname,index,homeTeamLength,teamId) async{
+    List<Favorite> favs = await getFavorites();
+    bool exists = false;
+    int indexFound = -1;
+     for(int i=0;i<favs.length;i++){
+      if(favs[i].playerId==id.toString()){
+        exists = true;
+        indexFound=i;
+        break;
+      }
+    }
+    debugPrint(exists.toString());
     showModalBottomSheet(context: context, builder: (context){
       return Container(
         height: 150,
@@ -122,7 +140,6 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
             color: Color(0xFF737373),
             height: 250,
             child: Container(
-              child: _buildPlayerOptionsModal(player,id,firstname,lastname,index,homeTeamLength),
               decoration: BoxDecoration(
                 color: Theme.of(context).canvasColor,
                 borderRadius: BorderRadius.only(
@@ -130,6 +147,7 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
                   topRight: const Radius.circular(10)
                 )
               ),
+              child: _buildPlayerOptionsModal(player,id,firstname,lastname,index,homeTeamLength,teamId,exists,indexFound),
             ),
           ),
         ),
@@ -137,7 +155,7 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     });
   }
 
-  Column _buildPlayerOptionsModal(player,id,firstname,lastname,index,homeTeamLength){
+  Column _buildPlayerOptionsModal(player,id,firstname,lastname,index,homeTeamLength,teamId,exists,indexFound){
     return Column(
       children: [
         Padding(child: Text(player["firstname"]+" "+player["lastname"],style: TextStyle(fontSize: 15,),),padding: EdgeInsets.fromLTRB(0,10,0,10),),
@@ -147,10 +165,11 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
           onTap: () => _selectPlayer(player,match),
         ),
         ListTile(
-          leading: Icon(Icons.star_border_rounded,color: Colors.amber,),
-          title: Text('Add To Favorites'),
+          leading: !exists ? Icon(Icons.star_border_rounded,color: Colors.amber,) : Icon(Icons.star_rounded,color: Colors.amber,),
+          title: !exists ? Text('Add To Favorites') : Text('Remove From Favorites'),
           onTap: () {
-            addToFavorites(id, firstname, lastname, index, homeTeamLength);
+            !exists ? addToFavorites(id, firstname, lastname, index, homeTeamLength,teamId) : removeFavorite(indexFound);
+            Navigator.pop(context);
           }),
       ],
     );
@@ -167,56 +186,41 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     });
   }
 
-  void addToFavorites(id,firstname,lastname,index,homeTeamLength){
-    favorites = FavoritePreferences.getFavorites();
-    List<String> nonNullFavorites = favorites ?? [];
-    // if(favorites==null) favorites = [];
-    if(nonNullFavorites.contains(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["home"]["logo"]) || nonNullFavorites.contains(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["visitors"]["logo"])){
-      final alreadyAdded = SnackBar(
-        backgroundColor: Color(0xaa808080),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        margin: EdgeInsets.only(
-            bottom: 105,
-            right: 20,
-            left: 20),
-        content: Text('${firstname+" "+lastname} is already in your favorites'),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(alreadyAdded);
-    }
-    else {
-      List<String> nonNullFavorites = favorites ?? [];
-      if(index <  homeTeamLength){
-        setState(() {
-          favorites?.add(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["home"]["logo"]);
-          FavoritePreferences.setFavorites(nonNullFavorites);
-        });
-      }
-      else{
-        setState(() {
-          favorites?.add(id.toString()+"*"+firstname+"*"+lastname+"*"+teams["visitors"]["logo"]+"*"+teams["visitors"]["id"].toString());
-          FavoritePreferences.setFavorites(nonNullFavorites);
-        });
-      }
-      FavoritePreferences.setFavorites(nonNullFavorites);
-      final favoriteAdded = SnackBar(
-        backgroundColor: Color(0xaa69BD8D),
-        duration: const Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        margin: EdgeInsets.only(
-            bottom: 105,
-            right: 20,
-            left: 20),
-        content: Text('${firstname+" "+lastname} added to your favorites'),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(favoriteAdded);
-
-    }
+  void removeFavorite(index) async {
+    var favs = await getFavorites();
+    favs.removeAt(index);
+    saveFavorites(favs);
   }
+
+  void addToFavorites(id,firstname,lastname,index,homeTeamLength,teamId) async{
+    // favorites = FavoritePreferences.getFavorites();
+    // List<String> nonNullFavorites = favorites ?? [];
+    String nbaId = await getId(firstname, lastname);
+    String headshot;
+    if(nbaId!='not_found') {
+       headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/$nbaId.png');
+    }
+    else headshot = 'https://img.icons8.com/ios/512/user.png';
+    addFavorite(Favorite(id.toString(),firstname,lastname,headshot,teamId));
+    setState(() {
+
+    });
+  }
+  Future<String> getId(String firstname,String lastname) async {
+    String jsonString = await rootBundle.loadString('assets/playersById.json');
+    Map<String, dynamic> jsonData = jsonDecode(jsonString);
+
+    // Assuming the JSON file has an array of objects with the keys "name" and "id"
+    List<dynamic> objects = jsonData['objects'];
+
+    for (var object in objects) {
+      if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
+        return object['id'];
+      }
+    }
+    return 'not_found';
+  }
+  // if(favorites==null) favorites = [];
+
+
 }

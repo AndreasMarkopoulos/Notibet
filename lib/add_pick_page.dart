@@ -165,7 +165,11 @@ class _AddPickPageState extends State<AddPickPage> {
   }
   void addPick(match,player) async {
     String nbaId = await getId(player["firstname"], player["lastname"]);
-    String headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/${nbaId}.png');
+    String headshot;
+    if(nbaId!='not_found') {
+      headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/$nbaId.png');
+    }
+    else headshot = 'https://img.icons8.com/ios/512/user.png';
     addToList(Pick(match["id"].toString(),'','',false,'',match["date"]["start"],player["id"].toString(),player["firstname"],player["lastname"],headshot,match["teams"]["home"]["logo"],match["teams"]["visitors"]["logo"],false,false,Goal(_dbSelection,_ouSelection.toString().split('.')[1],_lineSelection.toString(),0.toString())));
     var list = await getList();
     debugPrintAllPicks();

@@ -35,12 +35,12 @@ class _HomePageState extends State<HomePage> {
     final gamesTodayData = await APIService().get(endpoint:'/games', query:{"date": dateString});
     final matchesToday = gamesTodayData["response"];
     final matchesYesterday = gamesYesterdayData["response"];
-    // matchesToday.retainWhere((x){
-    //   return x["status"]["long"]!="Finished";
-    // });
-    // matchesYesterday.retainWhere((x){
-    //   return x["status"]["long"]!="Finished";
-    // });
+    matchesToday.retainWhere((x){
+      return x["status"]["long"]!="Finished";
+    });
+    matchesYesterday.retainWhere((x){
+      return x["status"]["long"]!="Finished";
+    });
     final gamesTomorrowData = await APIService().get(endpoint:'/games', query:{"date": tomorrowDateString});
     final gamesATomorrowData = await APIService().get(endpoint:'/games', query:{"date": aTomorrowDateString});
     final matchesTomorrow = gamesTomorrowData["response"];

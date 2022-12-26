@@ -145,7 +145,9 @@ class _MyPicksPageState extends State<MyPicksPage> {
           },
         ),
       ),
-      body: FutureBuilder(
+      body: picksList.length <1 ? Center(
+    child: Text("No picks added", style: TextStyle(fontSize: 25,fontWeight: FontWeight.w300,color: Colors.grey),),
+    ) :  FutureBuilder(
           future: fetchData(),
           builder: (context, AsyncSnapshot snapshot) {
             if (snapshot.data == null) {
@@ -179,32 +181,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                           padding: const EdgeInsets.fromLTRB(6, 2, 6, 2),
                                           child: Row(
                                             children: [
-                                              // GestureDetector(
-                                              //   onTap: () async {
-                                              //     snapshot.data[index].isPinned = !snapshot.data[index].isPinned;
-                                              //     !snapshot.data[index].isPinned ? saveList(rearrangePick(snapshot.data, index, 'unpin')) : saveList(rearrangePick(snapshot.data, index, 'pin'));
-                                              //     setState(() {});
-                                              //   },
-                                              //   child: !snapshot.data[index].isPinned
-                                              //       ? Transform.rotate(
-                                              //     angle: 40* math.pi/180,
-                                              //         child: Icon(
-                                              //             Icons.push_pin_outlined,
-                                              //             color: Color(0xff686b70),
-                                              //             size: 20,
-                                              //           ),
-                                              //       )
-                                              //       : Transform.rotate(
-                                              //     angle: 40* math.pi/180,
-                                              //         child: Icon(
-                                              //             Icons.push_pin,
-                                              //             color: Color(0xff686b70),
-                                              //             size: 20,
-                                              //           ),
-                                              //       ),
-                                              // ),
-                                              // Container(width: 5,),
-                                              // snapshot.data[index].pickStatus==0 ?
+                                              snapshot.data[index].pickStatus==0 ?
                                               GestureDetector(
                                                 onTap: () {
                                                   snapshot.data[index].isNotificationEnabled = !snapshot.data[index].isNotificationEnabled;
@@ -224,7 +201,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                         size: 20,
                                                       ),
                                               )
-                                                  // : Container(height: 20,),
+                                                  : Container(height: 20,),
 
                                             ],
                                           ),
