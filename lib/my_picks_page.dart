@@ -145,13 +145,16 @@ class _MyPicksPageState extends State<MyPicksPage> {
           },
         ),
       ),
-      body: picksList.length <1 ? Center(
-    child: Text("No picks added", style: TextStyle(fontSize: 25,fontWeight: FontWeight.w300,color: Colors.grey),),
-    ) :  FutureBuilder(
+      body: FutureBuilder(
           future: fetchData(),
           builder: (context, AsyncSnapshot snapshot) {
             if (snapshot.data == null) {
               return Center(child: CircularProgressIndicator());
+            }
+            if( snapshot.data.length <1){
+              return Center(
+                child: Text("No picks added", style: TextStyle(fontSize: 25,fontWeight: FontWeight.w300,color: Colors.grey),),
+              );
             }
             else {
               return Padding(
