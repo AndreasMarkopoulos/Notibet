@@ -6,12 +6,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_project/picks_prefs.dart';
 import 'package:http/http.dart' as http;
-import 'dart:math' as math;
-import 'package:flutter_project/confirmationModal.dart';
-import 'notification.dart';
 
-int picksCount = 4;
-int thisPicksCount = 3;
+Future fetchTodaysScoreboard() async {
+  final response =
+  await http.get(Uri.parse('https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json'));
+
+  if (response.statusCode == 200) {
+    // debugPrint(response.body);
+    return jsonDecode(response.body);
+  } else {
+    debugPrint('Failed to fetch common team roster: ${response.statusCode}');
+  }
+}
+
 
 class APIService {
   // API key
@@ -48,80 +55,74 @@ class MyPicksPage extends StatefulWidget {
 }
 
 class _MyPicksPageState extends State<MyPicksPage> {
-  late Map<String, dynamic> pickData;
-  late Map<String, dynamic> gameData;
+
+
+
   late List<dynamic> players;
-  late List<dynamic> playerData;
   late List<dynamic> game;
   late List<Pick> picksList = [];
   var livePickedGames = [];
   var liveGamePlayers = [];
   List<String> liveGamePlayerPick = [];
   // axios.get(player/statistics/gameId
+
   createData() async {
+    var scoreboard = await fetchTodaysScoreboard();
+    List<dynamic> games = scoreboard["scoreboard"]["games"];
     var picks = await getList();
     if (picks == null || picks.length == 0) return;
-    livePickedGames = [];
-    liveGamePlayers = [];
-
-    picks.forEach((item) {
-      if (DateTime.parse(item.startDate).toLocal().isBefore(DateTime.now())) {
-        if (!livePickedGames.contains(item.gameId)) {
-          livePickedGames.add(item.gameId);
+    for(int i=0;i<games.length;i++){
+      for(int j=0;j<picks.length;j++){
+        if(games[i]["gameId"].toString()==picks[j].gameId && picks[j].gameStatus!=3.toString()){
+          if(!livePickedGames.contains(games[i]["gameId"].toString())){
+            livePickedGames.add(games[i]["gameId"].toString());
+          }
+          liveGamePlayers.add('${picks[j].playerId}^${picks[j].goals.stat}');
         }
-        liveGamePlayers.add(item.playerId + '^' + item.goals.stat);
       }
-    });
-    picksList = picks;
+    }
     return picks;
   }
 
   Future<List<dynamic>> fetchData() async {
     await createData();
-    for (int i = 0; i < livePickedGames.length; i++) {
-      final pickData = await APIService().get(
-          endpoint: '/players/statistics', query: {"game": livePickedGames[i]});
-      final playerData = pickData["response"];
-      final gameData = await APIService()
-          .get(endpoint: '/games', query: {"id": livePickedGames[i]});
-      final game = gameData["response"][0];
-      for (int d = 0; d < picksList.length; d++) {
-        if (picksList[d].gameId == game['id'].toString()) {
-          picksList[d].gameStatus = game['status']['long'];
-          picksList[d].period = game['periods']['current'] == null
-              ? 0.toString()
-              : game['periods']['current'].toString();
-          picksList[d].isPeriodActive = game['periods']['endOfPeriod'] == null
-              ? 0.toString()
-              : game['periods']['endOfPeriod'];
-          picksList[d].clock = game['status']['clock'] == null
-              ? 0.toString()
-              : game['status']['clock'];
+    var boxscore;
+    var players;
+    picksList = await getList();
+    for(int i=0;i<livePickedGames.length;i++){
+      final res = await http.get(Uri.parse('https://cdn.nba.com/static/json/liveData/boxscore/boxscore_${livePickedGames[i]}.json'));
+      boxscore = json.decode(res.body)["game"];
+      for(int j=0;j<picksList.length;j++){
+        if(picksList[j].gameId==boxscore["gameId"].toString()){
+          picksList[j].gameStatus = boxscore["gameStatus"].toString();
+          picksList[j].period = boxscore["period"].toString();
+          picksList[j].isPeriodActive = (boxscore["gameClock"]=="PT00M00.00S" || boxscore["gameClock"]=="") ? false : true;
+          picksList[j].clock = boxscore["gameClock"];
         }
       }
-
-      for (int k = 0; k < playerData.length; k++) {
-        for (int m = 0; m < liveGamePlayers.length; m++) {
-          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Points') {
-              picksList[m].goals.current = playerData[k]["points"].toString();
+      players = [...boxscore["homeTeam"]["players"],...boxscore["awayTeam"]["players"]];
+      for (int k = 0; k < players.length; k++) {
+        for (int m = 0; m < picksList.length; m++) {
+          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Points') {
+            picksList[m].goals.current = players[k]["statistics"]["points"].toString();
           }
-          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Assists') {
-              picksList[m].goals.current = playerData[k]["assists"].toString();
+          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Rebounds') {
+            picksList[m].goals.current = players[k]["statistics"]["reboundsTotal"].toString();
           }
-          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Rebounds') {
-              picksList[m].goals.current = playerData[k]["totReb"].toString();
+          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Assists') {
+            picksList[m].goals.current = players[k]["statistics"]["assists"].toString();
           }
-          if (picksList[m].playerId == playerData[k]["player"]["id"].toString() && picksList[m].goals.stat == 'Three Pointers') {
-              picksList[m].goals.current = playerData[k]["tpm"].toString();
+          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Three Pointers') {
+            picksList[m].goals.current = players[k]["statistics"]["threePointersMade"].toString();
           }
         }
       }
-      saveList(picksList);
+    }
+    saveList(picksList);
+    final picks = picksList;
+    return picks;
     }
 
-    final players = picksList;
-    return players;
-  }
 
   @override
   void initState() {
@@ -141,7 +142,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
             style: TextStyle(color: Colors.white),
           ),
           onPressed: () {
-            saveList([]);
+            // saveList([]);
           },
         ),
       ),
@@ -252,10 +253,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                               ),
                                               Text(
                                                 snapshot.data[index]
-                                                        .firstname +
-                                                    " " +
-                                                    snapshot
-                                                        .data[index].lastname,
+                                                        .name,
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w300,
                                                 ),
@@ -271,12 +269,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                             child: Row(
                                               // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                               children: [
-                                                Image.network(
-                                                  snapshot
-                                                      .data[index].homeLogo,
-                                                  height: 25,
-                                                  width: 25,
-                                                ),
+                                                Container(width: 28,child: Image.asset('assets/team_pngs/${snapshot.data[index].homeLogo.split("/")[5]}.png')),
                                                 Text(
                                                   '  vs  ',
                                                   style: TextStyle(
@@ -284,12 +277,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                           FontWeight.w100,
                                                       fontSize: 15),
                                                 ),
-                                                Image.network(
-                                                  snapshot.data[index]
-                                                      .visitorLogo,
-                                                  height: 25,
-                                                  width: 25,
-                                                ),
+                                                Container(width: 28,child: Image.asset('assets/team_pngs/${snapshot.data[index].visitorLogo.split("/")[5]}.png')),
                                               ],
                                             ),
                                           ),
@@ -528,7 +516,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Delete Pick'),
-          content: Text('This pick will be deleted: \n \n ${data[index].firstname+" "+data[index].lastname}\n ${capitalize(data[index].goals.overUnder)+" "+data[index].goals.line+" "+data[index].goals.stat}'),
+          content: Text('This pick will be deleted: \n \n ${data[index].name} \n ${capitalize(data[index].goals.overUnder)+" "+data[index].goals.line+" "+data[index].goals.stat}'),
           actions: <Widget>[
             TextButton(
               style: TextButton.styleFrom(

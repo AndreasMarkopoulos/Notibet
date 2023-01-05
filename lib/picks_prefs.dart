@@ -7,24 +7,21 @@ import 'dart:convert';
 
 class Favorite {
   String playerId;
-  String firstname;
-  String lastname;
+  String name;
   String headshot;
   String teamId;
-  Favorite(this.playerId,this.firstname,this.lastname,this.headshot,this.teamId);
+  Favorite(this.playerId,this.name,this.headshot,this.teamId);
 
   Map<String, dynamic> toJson() => {
     'playerId': playerId,
-    'firstname': firstname,
-    'lastname': lastname,
+    'name': name,
     'headshot': headshot,
     'teamId': teamId,
   };
 
   static Favorite fromJson(Map<String, dynamic> json) => Favorite(
     json['playerId'],
-    json['firstname'],
-    json['lastname'],
+    json['name'],
     json['headshot'],
     json['teamId'],
   );
@@ -38,8 +35,7 @@ class Pick {
   String clock;
   String startDate;
   String playerId;
-  String firstname;
-  String lastname;
+  String name;
   String headshot;
   String homeLogo;
   String visitorLogo;
@@ -47,7 +43,7 @@ class Pick {
   bool isPinned;
   Goal goals;
 
-  Pick(this.gameId, this.gameStatus,this.period,this.isPeriodActive,this.clock, this.startDate, this.playerId, this.firstname,this.lastname,this.headshot, this.homeLogo, this.visitorLogo,this.isNotificationEnabled,this.isPinned,this.goals);
+  Pick(this.gameId, this.gameStatus,this.period,this.isPeriodActive,this.clock, this.startDate, this.playerId, this.name,this.headshot, this.homeLogo, this.visitorLogo,this.isNotificationEnabled,this.isPinned,this.goals);
 
   int get pickStatus {
     int status;
@@ -69,8 +65,7 @@ class Pick {
     'clock': clock,
     'startDate': startDate,
     'playerId': playerId,
-    'firstname': firstname,
-    'lastname': lastname,
+    'name': name,
     'headshot': headshot,
     'homeLogo': homeLogo,
     'visitorLogo': visitorLogo,
@@ -87,8 +82,7 @@ class Pick {
     json['clock'],
     json['startDate'],
     json['playerId'],
-    json['firstname'],
-    json['lastname'],
+    json['name'],
     json['headshot'],
     json['homeLogo'],
     json['visitorLogo'],
@@ -191,8 +185,7 @@ Future<void> debugPrintAllPicks() async {
     debugPrint('isPeriodActive: ${pick.isPeriodActive.toString()}');
     debugPrint('clock: ${pick.clock}');
     debugPrint('playerId: ${pick.playerId}');
-    debugPrint('firstname: ${pick.firstname}');
-    debugPrint('lastname: ${pick.lastname}');
+    debugPrint('name: ${pick.name}');
     debugPrint('headshot: ${pick.headshot}');
     debugPrint('homeLogo: ${pick.homeLogo}');
     debugPrint('visitorLogo: ${pick.visitorLogo}');

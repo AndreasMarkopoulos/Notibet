@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_project/picks_prefs.dart';
@@ -16,6 +16,33 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
+
+
+  Future fetchPlayerStatistics(String playerId,String season) async {
+    final headers = {
+      'Host': 'stats.nba.com',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.5',
+      'Referer': 'https://www.nba.com',
+      'Origin':'https://www.nba.com',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+      'x-nba-stats-origin': 'stats',
+      'x-nba-stats-token': 'true'
+    };
+    final res = await http.get(
+        Uri.parse('https://stats.nba.com/stats/playerdashboardbyyearoveryearcombined?DateFrom=&DateTo=&GameSegment=&LastNGames=0&LeagueID=00&Location=&MeasureType=Base&Month=0&OpponentTeamID=0&Outcome=&PORound=0&PaceAdjust=N&PerMode=PerGame&Period=0&PlayerID=$playerId&PlusMinus=N&Rank=N&Season=$season&SeasonSegment=&SeasonType=Regular%20Season&ShotClockRange=&VsConference=&VsDivision='), headers:headers);
+    if (res.statusCode == 200) {
+      // debugPrint(response.body);
+      var allStats = jsonDecode(res.body)["resultSets"][0]["rowSet"][0];
+      var stats = { "points": allStats[29], "rebounds":allStats[21], "assists":allStats[22], "threePointers":allStats[13], "gamesPlayed":allStats[5] };
+      return stats;
+    } else {
+      debugPrint('Failed to fetch common team roster: ${res.statusCode}');
+      return;
+    }
+  }
 
   Future<String> getId(String firstname,String lastname) async {
     String jsonString = await rootBundle.loadString('assets/playersById.json');
@@ -42,7 +69,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
   // late List<dynamic> favs;
   Future<List<Favorite>> fetchFavoriteData() async {
     favs = await getFavorites();
-    debugPrint(favs.toString());
+    // debugPrint(favs.toString());
     return favs;
   }
   Widget build(BuildContext context) {
@@ -85,7 +112,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
                                   backgroundColor: Colors.white,
                                 ),
                                 Container(width: 20,),
-                                Text(snapshot.data[index].firstname+" "+snapshot.data[index].lastname,style: TextStyle(fontSize: 17,fontWeight: FontWeight.w300),),
+                                Text(snapshot.data[index].name,style: TextStyle(fontSize: 17,fontWeight: FontWeight.w300),),
                                 // Text(snapshot.data[index])
 
                               ],
@@ -136,17 +163,15 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 
   Future<void> _showStats(BuildContext context, player) async{
-    var averages;
     showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(player.firstname+" "+player.lastname),
+          title: Text(player.name),
           content: FutureBuilder(
-            future: averageCalculations(player.playerId),
+            future: fetchPlayerStatistics(player.playerId,'2022-23'),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.done) {
-                averages = snapshot.data;
                 return Container(
                   width: 100,
                   height: 140,
@@ -155,34 +180,34 @@ class _FavoritesPageState extends State<FavoritesPage> {
                     children: [
                       Align(
                         alignment: Alignment.centerLeft,
-                          child: Text('Averages:',style: TextStyle(fontWeight: FontWeight.w300),)),
+                          child: Text('Averages in the last ${ snapshot.data['gamesPlayed']} games:',style: TextStyle(fontWeight: FontWeight.w300),)),
                       Container(height: 10,),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Points:  "),
-                          Text( averages[0]),
+                          Text( snapshot.data['points'].toString()),
                         ],
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Rebounds:  "),
-                          Text( averages[1]),
+                          Text( snapshot.data['rebounds'].toString()),
                         ],
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Assists:  "),
-                          Text( averages[2]),
+                          Text( snapshot.data["assists"].toString()),
                         ],
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text("Three Pointers:  "),
-                          Text( averages[3]),
+                          Text( snapshot.data["threePointers"].toString()),
                         ],
                       ),
                     ],
@@ -216,7 +241,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Remove from favorites'),
-          content: Text('${data[index].firstname} ${data[index].lastname} will be removed from your favorites'),
+          content: Text('${data[index].name} will be removed from your favorites'),
           actions: <Widget>[
             TextButton(
               style: TextButton.styleFrom(

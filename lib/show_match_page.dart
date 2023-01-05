@@ -1,18 +1,71 @@
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_project/picks_prefs.dart';
 import 'package:http/http.dart';
+import 'package:transparent_image/transparent_image.dart';
 import 'add_pick_page.dart';
 import 'favorite_prefs.dart';
 import 'my_picks_page.dart';
 
+Future fetchStandings() async {
+  final headers = {
+    'Host': 'stats.nba.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': 'https://www.nba.com',
+    'Origin':'https://www.nba.com',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'x-nba-stats-origin': 'stats',
+    'x-nba-stats-token': 'true'
+  };
+  final response = await http.get(
+      Uri.parse('https://stats.nba.com/stats/leaguestandings?LeagueID=00&Season=2022-23&SeasonType=Regular+Season&SeasonYear='), headers:headers);
+
+  debugPrint('fetched');
+
+  if (response.statusCode == 200) {
+    debugPrint(response.body);
+    return jsonDecode(response.body);
+  } else {
+    debugPrint('Failed to fetch common team roster: ${response.statusCode}');
+  }
+}
+
+
+Future fetchCommonTeamRoster(String teamId) async {
+  final headers = {
+    'Host': 'stats.nba.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0',
+    'Accept': 'application/json, text/plain, */*',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Referer': 'https://www.nba.com',
+    'Origin':'https://www.nba.com',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'x-nba-stats-origin': 'stats',
+    'x-nba-stats-token': 'true'
+  };
+  final response = await http.get(
+      Uri.parse('https://stats.nba.com/stats/commonteamroster?LeagueID=00&Season=2022-23&TeamID=${teamId}'), headers:headers);
+
+  if (response.statusCode == 200) {
+    // debugPrint(response.body);
+    return jsonDecode(response.body);
+  } else {
+    debugPrint('Failed to fetch common team roster: ${response.statusCode}');
+  }
+}
+
 class ShowMatchPage extends StatefulWidget {
-  const ShowMatchPage({Key? key,required this.teams,required this.match}) : super(key: key);
+  const ShowMatchPage({Key? key,required this.match}) : super(key: key);
   final match;
-  final Object teams;
+  // final Object teams;
 
   @override
   State<ShowMatchPage> createState() => _ShowMatchPageState();
@@ -29,9 +82,10 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
 
   @override
   void initState() {
+    fetchStandings();
     super.initState();
     match = widget.match;
-    teams = widget.teams;
+    // teams = widget.teams;
   }
   List<String>? favorites = FavoritePreferences.getFavorites();
   late Map<String, dynamic> team1Data;
@@ -39,13 +93,14 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
   late List<dynamic> team1;
   late List<dynamic> team2;
   Future<List<dynamic>> fetchSingleMatchData() async {
-    final team1Data = await APIService().get(endpoint: '/players',
-        query: {"team": teams["home"]["id"].toString(), "season": "2022"});
-    final team1 = team1Data["response"];
-    final team2Data = await APIService().get(endpoint: '/players',
-        query: {"team": teams["visitors"]["id"].toString(), "season": "2022"});
-    final team2 = team2Data["response"];
+    final team1Data = await fetchCommonTeamRoster(match["homeTeam"]["teamId"].toString());
+    final team1 = team1Data["resultSets"][0]["rowSet"];
+    // debugPrint(team1.toString());
+    final team2Data = await fetchCommonTeamRoster(match["awayTeam"]["teamId"].toString());
+    final team2 = team2Data["resultSets"][0]["rowSet"];
+    // debugPrint(team2.toString());
     var playersByTeam = [...team1, ...team2, team1.length];
+    // debugPrint(playersByTeam.toString());
     return playersByTeam;
   }
 
@@ -57,21 +112,21 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
         children: [
           Row(
             children: [
-              Text(teams["home"]["nickname"],style: TextStyle(fontWeight: FontWeight.w300),),
+              // Text(teams["home"]["nickname"],style: TextStyle(fontWeight: FontWeight.w300),),
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Image.network(teams["home"]["logo"],height: 20,width: 20,),
+                // child: Image.network(teams["home"]["logo"],height: 20,width: 20,),
               ),
             ],
           ),
-          Text("vs",style: TextStyle(color: Colors.orange[100],fontWeight: FontWeight.w300),),
+          // Text("vs",style: TextStyle(color: Colors.orange[100],fontWeight: FontWeight.w300),),
           Row(
             children: [
               Padding(
                 padding: const EdgeInsets.all(8.0),
-                child: Image.network(teams["visitors"]["logo"],height: 20,width: 20,),
+                // child: Image.network(teams["visitors"]["logo"],height: 20,width: 20,),
               ),
-              Text(teams["visitors"]["nickname"],style: TextStyle(fontWeight: FontWeight.w300),),
+              // Text(teams["visitors"]["nickname"],style: TextStyle(fontWeight: FontWeight.w300),),
             ],
           ),
         ],
@@ -94,18 +149,36 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
                   itemBuilder: (BuildContext context,index){
                     return GestureDetector(
                       onTap: (){
-                        String teamId = index <  snapshot.data[snapshot.data.length-1] ? teams["home"]["id"].toString() : teams["visitors"]["id"].toString();
-                        openOptionsModal(snapshot.data[index],snapshot.data[index]["id"],snapshot.data[index]["firstname"],snapshot.data[index]["lastname"],index,snapshot.data[snapshot.data.length-1],teamId);},
+                        String teamId = index <  snapshot.data[snapshot.data.length-1] ? match["homeTeam"]["teamId"].toString() : match["homeTeam"]["teamId"].toString();
+                        openOptionsModal(snapshot.data[index],index,snapshot.data[snapshot.data.length-1]);},
                       child:Card(
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
                         child: Row(
                           children: [
                             Padding(
-                              padding: const EdgeInsets.fromLTRB(10, 2, 2, 2),
-                              child: index <  snapshot.data[snapshot.data.length-1] ? Image.network(teams["home"]["logo"],height: 35,width: 35,) : Image.network(teams["visitors"]["logo"],height: 35,width: 35,),
+                              padding: const EdgeInsets.fromLTRB(10, 5, 2, 5),
+                              // child:Text(snapshot.data[index][14].toString())
+                              child: Container(
+                                width: 40,
+                                height: 45,
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(100.0),
+                                  child: FadeInImage.memoryNetwork(
+                                    height: 40,
+                                    image: 'https://cdn.nba.com/headshots/nba/latest/1040x760/${snapshot.data[index][14].toString()}.png',
+                                    placeholder: kTransparentImage,
+                                    fit: BoxFit.cover,
+                                    imageErrorBuilder:(c, o, s) => Image.asset('assets/team_pngs/fallback.png'),
+                                  ),
+                                ),
+                              )
+                              // CircleAvatar(
+                              //     backgroundColor: Colors.white,
+                              //     backgroundImage: NetworkImage('https://cdn.nba.com/headshots/nba/latest/1040x760/${snapshot.data[index][14].toString()}.png'))
+                              // child: index <  snapshot.data[snapshot.data.length-1] ? Image.network(teams["home"]["logo"],height: 35,width: 35,) : Image.network(teams["visitors"]["logo"],height: 35,width: 35,),
                             ),
                             SizedBox(width: 15),
-                            Text(snapshot.data[index]["firstname"]+" "+snapshot.data[index]["lastname"],style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),),
+                            Text(snapshot.data[index][3],style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),),
                           ],
                         ),
                       ),
@@ -120,12 +193,12 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     );
   }
 
-  void openOptionsModal(Object player,id,firstname,lastname,index,homeTeamLength,teamId) async{
+  void openOptionsModal(player,index,homeTeamLength) async{
     List<Favorite> favs = await getFavorites();
     bool exists = false;
     int indexFound = -1;
      for(int i=0;i<favs.length;i++){
-      if(favs[i].playerId==id.toString()){
+      if(favs[i].playerId==player[14].toString()){
         exists = true;
         indexFound=i;
         break;
@@ -147,7 +220,7 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
                   topRight: const Radius.circular(10)
                 )
               ),
-              child: _buildPlayerOptionsModal(player,id,firstname,lastname,index,homeTeamLength,teamId,exists,indexFound),
+              child: _buildPlayerOptionsModal(player,index,homeTeamLength,exists,indexFound),
             ),
           ),
         ),
@@ -155,10 +228,10 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     });
   }
 
-  Column _buildPlayerOptionsModal(player,id,firstname,lastname,index,homeTeamLength,teamId,exists,indexFound){
+  Column _buildPlayerOptionsModal(player,index,homeTeamLength,exists,indexFound){
     return Column(
       children: [
-        Padding(child: Text(player["firstname"]+" "+player["lastname"],style: TextStyle(fontSize: 15,),),padding: EdgeInsets.fromLTRB(0,10,0,10),),
+        Padding(child: Text(player[3],style: TextStyle(fontSize: 15,),),padding: EdgeInsets.fromLTRB(0,10,0,10),),
         ListTile(
           leading: Icon(Icons.sports_basketball,color: Colors.orange[500],),
           title: Text('Add Pick'),
@@ -168,14 +241,14 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
           leading: !exists ? Icon(Icons.star_border_rounded,color: Colors.amber,) : Icon(Icons.star_rounded,color: Colors.amber,),
           title: !exists ? Text('Add To Favorites') : Text('Remove From Favorites'),
           onTap: () {
-            !exists ? addToFavorites(id, firstname, lastname, index, homeTeamLength,teamId) : removeFavorite(indexFound);
+            !exists ? addToFavorites(player, index, homeTeamLength) : removeFavorite(indexFound);
             Navigator.pop(context);
           }),
       ],
     );
   }
 
-  void _selectPlayer(Object player,match){
+  void _selectPlayer( player,match){
     // debugPrint(match.toString());
     Navigator.pop(context);
     setState(() {
@@ -192,33 +265,15 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
     saveFavorites(favs);
   }
 
-  void addToFavorites(id,firstname,lastname,index,homeTeamLength,teamId) async{
+  void addToFavorites(player,index,homeTeamLength) async{
     // favorites = FavoritePreferences.getFavorites();
     // List<String> nonNullFavorites = favorites ?? [];
-    String nbaId = await getId(firstname, lastname);
     String headshot;
-    if(nbaId!='not_found') {
-       headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/$nbaId.png');
-    }
-    else headshot = 'https://img.icons8.com/ios/512/user.png';
-    addFavorite(Favorite(id.toString(),firstname,lastname,headshot,teamId));
+       headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/${player[14]}.png');
+    addFavorite(Favorite(player[14].toString(),player[3],headshot,player[0].toString()));
     setState(() {
 
     });
-  }
-  Future<String> getId(String firstname,String lastname) async {
-    String jsonString = await rootBundle.loadString('assets/playersById.json');
-    Map<String, dynamic> jsonData = jsonDecode(jsonString);
-
-    // Assuming the JSON file has an array of objects with the keys "name" and "id"
-    List<dynamic> objects = jsonData['objects'];
-
-    for (var object in objects) {
-      if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
-        return object['id'];
-      }
-    }
-    return 'not_found';
   }
   // if(favorites==null) favorites = [];
 

@@ -1,9 +1,9 @@
-import 'dart:async';
-
+import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_project/my_picks_page.dart';
-import 'package:flutter_project/palette.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_project/show_match_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -48,9 +48,54 @@ class _HomePageState extends State<HomePage> {
     var matches = [...matchesYesterday,...matchesToday,...matchesTomorrow,...matchesATomorrow];
     return matches;
   }
+
+  Future<List<dynamic>> getScoreboard() async {
+    final response = await http.get(Uri.parse('https://cdn.nba.com/static/json/liveData/scoreboard/todaysScoreboard_00.json'));
+    var scoreboard;
+    if (response.statusCode == 200) {
+      // If the call to the server was successful, parse the JSON
+      scoreboard = json.decode(response.body)['scoreboard'];
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load scoreboard');
+    }
+    List<Object> games = scoreboard["games"];
+    return games;
+  }
+
+  Future<List<dynamic>> getSchedule() async {
+    final response = await http.get(Uri.parse('https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json'));
+    var schedule;
+    var games =[];
+    // debugPrint(DateFormat('d/m/yyyy').format(DateTime.now()).toString());
+    if (response.statusCode == 200) {
+      // If the call to the server was successful, parse the JSON
+      schedule = json.decode(response.body)['leagueSchedule']["gameDates"];
+      for(int i=0;i<schedule.length;i++){
+        // debugPrint(schedule[i]["gameDate"]);
+        if(schedule[i]["gameDate"].split(" ")[0]==DateFormat('M/d/yyyy').format(DateTime.now())){
+          // debugPrint(schedule[i].toString());
+
+          games =[...schedule[i-1]["games"],...schedule[i]["games"],...schedule[i+1]["games"]];
+          break;
+        }
+      }
+    } else {
+      // If that call was not successful, throw an error.
+      throw Exception('Failed to load scoreboard');
+    }
+    // debugPrint(games.toString());
+    games = games.where((game) {
+      return game["gameStatus"]!=3;
+    }).toList();
+    return games;
+  }
+
   @override
   void initState(){
-    fetchMatchData();
+    getSchedule();
+    getScoreboard();
+    // fetchMatchData();
   }
   @override
   Widget build(BuildContext context) {
@@ -61,7 +106,7 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Container(
           child: FutureBuilder(
-            future:  fetchMatchData(),
+            future:  getSchedule(),
             builder: (context, AsyncSnapshot snapshot) {
               if (snapshot.data==null)
                 return Center(child: CircularProgressIndicator());
@@ -76,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                           child: GestureDetector(
                             onTap: (){
                               Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext context){
-                                return ShowMatchPage(teams: snapshot.data[index]["teams"],match: snapshot.data[index]);
+                                return ShowMatchPage(match: snapshot.data[index]);
                               }),);
                               },
                                 child: Card(
@@ -94,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                                               child: Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                  Text(snapshot.data[index]["status"]["long"]!="Scheduled" ? snapshot.data[index]["status"]["long"] : (DateTime.parse(snapshot.data[index]["date"]["start"]).toLocal().toString().split(" ")[1].substring(0,5)+"\n"+DateTime.parse(snapshot.data[index]["date"]["start"]).toLocal().toString().split(" ")[0].substring(5,10).split('-')[1]+'-'+DateTime.parse(snapshot.data[index]["date"]["start"]).toLocal().toString().split(" ")[0].substring(5,10).split('-')[0] ),
+                                                  Text(snapshot.data[index]["gameStatus"]==3 ? snapshot.data[index]["gameStatusText"] : (DateTime.parse(snapshot.data[index]["gameTimeUTC"]).toLocal().toString().split(" ")[1].substring(0,5)+"\n"+DateTime.parse(snapshot.data[index]["gameTimeUTC"]).toLocal().toString().split(" ")[0].substring(5,10).split('-')[1]+'-'+DateTime.parse(snapshot.data[index]['gameTimeUTC']).toLocal().toString().split(" ")[0].substring(5,10).split('-')[0] ),
                                                     style: TextStyle(fontWeight: FontWeight.w300,fontSize: 15,color: Colors.black54),
                                                     textAlign: TextAlign.center,)
                                                 ],
@@ -112,9 +157,10 @@ class _HomePageState extends State<HomePage> {
                                                       children:[
                                                         Padding(
                                                           padding: const EdgeInsets.fromLTRB(0, 0,25, 0),
-                                                          child: Image.network(snapshot.data[index]["teams"]["home"]["logo"],height:25 ,width: 25,),
+                                                          child: Container(width: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["homeTeam"]["teamId"]}.png')),
+                                                          // child: Container(width: 25,height: 25, child: SvgPicture.network('https://cdn.nba.com/logos/nba/${snapshot.data[index]["homeTeam"]["teamId"].toString()}/global/L/logo.svg')),
                                                         ),
-                                                        Text(snapshot.data[index]["teams"]["home"]["name"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
+                                                        Text(snapshot.data[index]["homeTeam"]["teamCity"]+" "+snapshot.data[index]["homeTeam"]["teamName"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
                                                       ]
                                                   ),
                                                 ),
@@ -125,9 +171,10 @@ class _HomePageState extends State<HomePage> {
                                                       children: [
                                                         Padding(
                                                           padding: const EdgeInsets.fromLTRB(0, 0,25, 0),
-                                                          child: Image.network(snapshot.data[index]["teams"]["visitors"]["logo"],height:25 ,width: 25,),
+                                                          child: Container(width: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["awayTeam"]["teamId"]}.png')),
+                                                          // child: Container(width: 25,height: 25, child: SvgPicture.network('https://cdn.nba.com/logos/nba/${snapshot.data[index]["awayTeam"]["teamId"].toString()}/global/L/logo.svg')),
                                                         ),
-                                                        Text(snapshot.data[index]["teams"]["visitors"]["name"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
+                                                        Text(snapshot.data[index]["awayTeam"]["teamCity"]+" "+snapshot.data[index]["awayTeam"]["teamName"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
                                                       ]
                                                   ),
                                                 ),

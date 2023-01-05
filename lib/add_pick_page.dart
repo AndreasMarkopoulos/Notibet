@@ -11,7 +11,7 @@ import 'package:numberpicker/numberpicker.dart';
 class AddPickPage extends StatefulWidget {
   const AddPickPage({Key? key,required this.player, required this.match}) : super(key: key);
   final match;
-  final Object player;
+  final player;
 
   @override
   State<AddPickPage> createState() => _AddPickPageState();
@@ -36,7 +36,7 @@ class _AddPickPageState extends State<AddPickPage> {
   }
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add a pick for '+ player["firstname"]+" "+player["lastname"]),),
+      appBar: AppBar(title: Text('Add a pick for '+ player[3]),),
       body: Padding(
         padding: EdgeInsets.fromLTRB(10,20,10,10),
         child: Padding(
@@ -139,7 +139,7 @@ class _AddPickPageState extends State<AddPickPage> {
                         Column(
                             children: [
                             Row(
-                              children:[Text(player["firstname"]+" "+player["lastname"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 15),),]
+                              children:[Text(player[3],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 15),),]
                             ),
                             Container(height: 15,),
                             Row(
@@ -164,28 +164,10 @@ class _AddPickPageState extends State<AddPickPage> {
     );
   }
   void addPick(match,player) async {
-    String nbaId = await getId(player["firstname"], player["lastname"]);
-    String headshot;
-    if(nbaId!='not_found') {
-      headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/$nbaId.png');
-    }
-    else headshot = 'https://img.icons8.com/ios/512/user.png';
-    addToList(Pick(match["id"].toString(),'','',false,'',match["date"]["start"],player["id"].toString(),player["firstname"],player["lastname"],headshot,match["teams"]["home"]["logo"],match["teams"]["visitors"]["logo"],false,false,Goal(_dbSelection,_ouSelection.toString().split('.')[1],_lineSelection.toString(),0.toString())));
-    var list = await getList();
+    String headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/${player[14].toString()}.png');
+    addToList(Pick(match["gameId"],'','',false,'',match["gameTimeUTC"],player[14].toString(),player[3],headshot,'https://cdn.nba.com/logos/nba/${match["homeTeam"]["teamId"].toString()}/global/L/logo.svg','https://cdn.nba.com/logos/nba/${match["awayTeam"]["teamId"].toString()}/global/L/logo.svg',false,false,Goal(_dbSelection,_ouSelection.toString().split('.')[1],_lineSelection.toString(),0.toString())));
     debugPrintAllPicks();
-  }
-  Future<String> getId(String firstname,String lastname) async {
-    String jsonString = await rootBundle.loadString('assets/playersById.json');
-    Map<String, dynamic> jsonData = jsonDecode(jsonString);
-
-    // Assuming the JSON file has an array of objects with the keys "name" and "id"
-    List<dynamic> objects = jsonData['objects'];
-
-    for (var object in objects) {
-      if (object['firstname'].toLowerCase() == firstname.toLowerCase() && object['lastname'].toLowerCase() == lastname.toLowerCase()) {
-        return object['id'];
-      }
-    }
-    return 'not_found';
+    // var list = await getList();
+    // debugPrintAllPicks();
   }
 }
