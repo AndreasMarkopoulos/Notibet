@@ -34,6 +34,7 @@ class Pick {
   bool isPeriodActive;
   String clock;
   String startDate;
+  int onCourt;
   String playerId;
   String name;
   String headshot;
@@ -43,16 +44,16 @@ class Pick {
   bool isPinned;
   Goal goals;
 
-  Pick(this.gameId, this.gameStatus,this.period,this.isPeriodActive,this.clock, this.startDate, this.playerId, this.name,this.headshot, this.homeLogo, this.visitorLogo,this.isNotificationEnabled,this.isPinned,this.goals);
+  Pick(this.gameId, this.gameStatus,this.period,this.isPeriodActive,this.clock, this.startDate, this.onCourt, this.playerId, this.name,this.headshot, this.homeLogo, this.visitorLogo,this.isNotificationEnabled,this.isPinned,this.goals);
 
   int get pickStatus {
     int status;
     if(goals.overUnder=='over'){
-      status = (gameStatus == 'Finished' && goals.percentage<1) ? -1 : (goals.percentage<1 ? 0 : 1);
+      status = (gameStatus == '3' && goals.percentage<1) ? -1 : (goals.percentage<1 ? 0 : 1);
       // status = (gameStatus == 'Finished') ? 0 : ((goals.percentage < 1) ? -1 : 1);
     }
     else{
-      status = goals.percentage > 1 ? -1 : (gameStatus == 'Finished' ? 1 : 0);
+      status = goals.percentage > 1 ? -1 : (gameStatus == '3' ? 1 : 0);
     }
     return status;
   }
@@ -64,6 +65,7 @@ class Pick {
     'isPeriodActive': isPeriodActive,
     'clock': clock,
     'startDate': startDate,
+    'onCourt': onCourt,
     'playerId': playerId,
     'name': name,
     'headshot': headshot,
@@ -81,6 +83,7 @@ class Pick {
     json['isPeriodActive'],
     json['clock'],
     json['startDate'],
+    json['onCourt'],
     json['playerId'],
     json['name'],
     json['headshot'],
@@ -181,6 +184,7 @@ Future<void> debugPrintAllPicks() async {
     debugPrint('pickStatus: ${pick.pickStatus}');
     debugPrint('gameStatus: ${pick.gameStatus}');
     debugPrint('startDate: ${pick.startDate}');
+    debugPrint('onCourt: ${pick.onCourt}');
     debugPrint('period: ${pick.period}');
     debugPrint('isPeriodActive: ${pick.isPeriodActive.toString()}');
     debugPrint('clock: ${pick.clock}');

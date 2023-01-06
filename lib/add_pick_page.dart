@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_project/favorite_prefs.dart';
 import 'package:flutter_project/notification.dart';
 import 'package:flutter_project/picks_prefs.dart';
+import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:numberpicker/numberpicker.dart';
 
 class AddPickPage extends StatefulWidget {
@@ -21,32 +22,37 @@ enum overUnder { over , under }
 
 class _AddPickPageState extends State<AddPickPage> {
   var _dbSelection = 'Points';
-  final _dbOptions = ['Points','Rebounds','Assists','Three Pointers'];
+  final _dbOptions = ['Points', 'Rebounds', 'Assists', 'Three Pointers'];
   var _lineSelection = 10;
 
   overUnder? _ouSelection = overUnder.over;
 
   var match;
   var player;
+  bool canVibrate = false;
+
   @override
   void initState() {
     super.initState();
     match = widget.match;
     player = widget.player;
+    _checkIfVibrate();
   }
+
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add a pick for '+ player[3]),),
+      appBar: AppBar(title: Text('Add a pick for ' + player[3]),),
       body: Padding(
-        padding: EdgeInsets.fromLTRB(10,20,10,10),
+        padding: EdgeInsets.fromLTRB(10, 20, 10, 10),
         child: Padding(
-          padding: EdgeInsets.fromLTRB(10,20,10,0),
+          padding: EdgeInsets.fromLTRB(10, 20, 10, 0),
           child: ListView(
             children: [
               Container(height: 30,),
-              Container(height: 1,color: Colors.grey[300],),
+              Container(height: 1, color: Colors.grey[300],),
               Container(height: 30,),
-              Text('Select a statitic:',style: TextStyle(fontWeight: FontWeight.w500),),
+              Text('Select a statitic:',
+                style: TextStyle(fontWeight: FontWeight.w500),),
               Container(height: 10,),
               Container(
                 decoration: BoxDecoration(color: Colors.grey[100]),
@@ -71,9 +77,10 @@ class _AddPickPageState extends State<AddPickPage> {
                 ),
               ),
               Container(height: 30,),
-              Container(height: 1,color: Colors.grey[300],),
+              Container(height: 1, color: Colors.grey[300],),
               Container(height: 30,),
-              Text('Select over/under:',style: TextStyle(fontWeight: FontWeight.w500),),
+              Text('Select over/under:',
+                style: TextStyle(fontWeight: FontWeight.w500),),
               Container(height: 10,),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -102,9 +109,10 @@ class _AddPickPageState extends State<AddPickPage> {
                 ],
               ),
               Container(height: 30,),
-              Container(height: 1,color: Colors.grey[300],),
+              Container(height: 1, color: Colors.grey[300],),
               Container(height: 30,),
-              Text('Select line:',style: TextStyle(fontWeight: FontWeight.w500),),
+              Text(
+                'Select line:', style: TextStyle(fontWeight: FontWeight.w500),),
               Container(height: 10,),
               Center(
                 child: NumberPicker(
@@ -117,40 +125,56 @@ class _AddPickPageState extends State<AddPickPage> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.black26),
                     ),
-                    onChanged: (int? value){setState(() {
-                  _lineSelection = value!;
-                });}),
+                    onChanged: (int? value) {
+                      setState(() {
+                        _lineSelection = value!;
+                      });
+                    }),
               ),
               Container(height: 30,),
-              Container(height: 1,color: Colors.grey[300],),
+              Container(height: 1, color: Colors.grey[300],),
               Container(height: 30,),
               Padding(
-                padding: EdgeInsets.fromLTRB(10,0,10,20),
+                padding: EdgeInsets.fromLTRB(10, 0, 10, 20),
                 child: Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(0),
                   ),
                   elevation: 3,
                   child: Container(
-                    padding: const EdgeInsets.fromLTRB(15, 15,15, 15),
+                    padding: const EdgeInsets.fromLTRB(15, 15, 15, 15),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Column(
                             children: [
-                            Row(
-                              children:[Text(player[3],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 15),),]
-                            ),
-                            Container(height: 15,),
-                            Row(
-                              children:[
-                                Text(_dbSelection+":  "),
-                                _ouSelection==overUnder.over ? Text('Over'+" "+_lineSelection.toString()) : Text('Under'+" "+_lineSelection.toString()),]
-                            ),
-                        ]),
+                              Row(
+                                  children: [
+                                    Text(player[3], style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 15),),
+                                  ]
+                              ),
+                              Container(height: 15,),
+                              Row(
+                                  children: [
+                                    Text(_dbSelection + ":  "),
+                                    _ouSelection == overUnder.over ? Text(
+                                        'Over' + " " +
+                                            _lineSelection.toString()) : Text(
+                                        'Under' + " " +
+                                            _lineSelection.toString()),
+                                  ]
+                              ),
+                            ]),
                         Column(
-                          children: [ElevatedButton(onPressed: (){addPick(match,player);},
-                              child:Icon(Icons.add,) )],
+                          children: [ElevatedButton(onPressed: () {
+                            addPick(match, player);
+                            // Vibration.vibrate();
+                            _getVibration(FeedbackType.success);
+                          },
+                              child: Icon(Icons.add,))
+                          ],
                         ),
                       ],
                     ),
@@ -163,11 +187,42 @@ class _AddPickPageState extends State<AddPickPage> {
       ),
     );
   }
-  void addPick(match,player) async {
-    String headshot=('https://cdn.nba.com/headshots/nba/latest/1040x760/${player[14].toString()}.png');
-    addToList(Pick(match["gameId"],'','',false,'',match["gameTimeUTC"],player[14].toString(),player[3],headshot,'https://cdn.nba.com/logos/nba/${match["homeTeam"]["teamId"].toString()}/global/L/logo.svg','https://cdn.nba.com/logos/nba/${match["awayTeam"]["teamId"].toString()}/global/L/logo.svg',false,false,Goal(_dbSelection,_ouSelection.toString().split('.')[1],_lineSelection.toString(),0.toString())));
-    debugPrintAllPicks();
+
+  void addPick(match, player) async {
+    String headshot = ('https://cdn.nba.com/headshots/nba/latest/1040x760/${player[14]
+        .toString()}.png');
+    addToList(Pick(
+        match["gameId"],
+        '',
+        '',
+        false,
+        '',
+        match["gameTimeUTC"],
+        0,
+        player[14].toString(),
+        player[3],
+        headshot,
+        'https://cdn.nba.com/logos/nba/${match["homeTeam"]["teamId"]
+            .toString()}/global/L/logo.svg',
+        'https://cdn.nba.com/logos/nba/${match["awayTeam"]["teamId"]
+            .toString()}/global/L/logo.svg',
+        false,
+        false,
+        Goal(_dbSelection, _ouSelection.toString().split('.')[1],
+            _lineSelection.toString(), 0.toString())));
+    // debugPrintAllPicks();
     // var list = await getList();
     // debugPrintAllPicks();
+  }
+  _checkIfVibrate() async {
+    // check if device can vibrate
+    canVibrate = await Vibrate.canVibrate;
+  }
+
+  _getVibration(feedbackType) async {
+    if (canVibrate) {
+      Vibrate.feedback(feedbackType);
+      // Vibrate.vibrate();   // Try this too!
+    }
   }
 }

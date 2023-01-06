@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_background/flutter_background.dart';
@@ -33,8 +34,8 @@ Future<void> main() async {
   bool success = await FlutterBackground.initialize(androidConfig: androidConfig);
   bool running = await FlutterBackground.enableBackgroundExecution();
   if(running){
-    // Timer timer = Timer.periodic(Duration(seconds: 15), (Timer t) =>  checkPicks()
-    // );
+    Timer timer = Timer.periodic(Duration(seconds: 15), (Timer t) =>  checkPicks()
+    );
   }
   runApp(const MyApp());
 
@@ -73,7 +74,12 @@ Future<List<dynamic>> fetchData() async {
   picksList = await getList();
   for(int i=0;i<livePickedGames.length;i++){
     final res = await http.get(Uri.parse('https://cdn.nba.com/static/json/liveData/boxscore/boxscore_${livePickedGames[i]}.json'));
-    boxscore = json.decode(res.body)["game"];
+    if (res.statusCode == 200){
+      boxscore = json.decode(res.body)["game"];
+    }
+    else {
+      break;
+    }
     for(int j=0;j<picksList.length;j++){
       if(picksList[j].gameId==boxscore["gameId"].toString()){
         picksList[j].gameStatus = boxscore["gameStatus"].toString();
@@ -121,7 +127,9 @@ checkPicks() async {
 }
 
 sendNotification(String title,String body, fln) async{
-  Noti.showNotification(title: title, body: body, fln: fln);
+  Random random = Random();
+  int randomInt = random.nextInt(256);
+  Noti.showNotification(id:randomInt, title: title, body: body, fln: fln);
 }
 
 class MyApp extends StatelessWidget {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/cupertino.dart';
@@ -79,12 +80,15 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
   getMatchId(){
     matchId = match['id'].toString();
   }
+  bool canVibrate = false;
 
   @override
   void initState() {
     fetchStandings();
     super.initState();
     match = widget.match;
+    _checkIfVibrate();
+
     // teams = widget.teams;
   }
   List<String>? favorites = FavoritePreferences.getFavorites();
@@ -241,6 +245,7 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
           leading: !exists ? Icon(Icons.star_border_rounded,color: Colors.amber,) : Icon(Icons.star_rounded,color: Colors.amber,),
           title: !exists ? Text('Add To Favorites') : Text('Remove From Favorites'),
           onTap: () {
+            _getVibration(FeedbackType.success);
             !exists ? addToFavorites(player, index, homeTeamLength) : removeFavorite(indexFound);
             Navigator.pop(context);
           }),
@@ -275,7 +280,17 @@ class _ShowMatchPageState extends State<ShowMatchPage> {
 
     });
   }
-  // if(favorites==null) favorites = [];
+  _checkIfVibrate() async {
+    // check if device can vibrate
+    canVibrate = await Vibrate.canVibrate;
+  }
+
+  _getVibration(feedbackType) async {
+    if (canVibrate) {
+      Vibrate.feedback(feedbackType);
+      // Vibrate.vibrate();   // Try this too!
+    }
+  }
 
 
 }

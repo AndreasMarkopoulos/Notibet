@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_project/picks_prefs.dart';
+import 'package:flutter_vibrate/flutter_vibrate.dart';
 import 'package:http/http.dart' as http;
 
 Future fetchTodaysScoreboard() async {
@@ -67,6 +68,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
   // axios.get(player/statistics/gameId
 
   createData() async {
+    // debugPrintAllPicks();
     var scoreboard = await fetchTodaysScoreboard();
     List<dynamic> games = scoreboard["scoreboard"]["games"];
     var picks = await getList();
@@ -86,12 +88,19 @@ class _MyPicksPageState extends State<MyPicksPage> {
 
   Future<List<dynamic>> fetchData() async {
     await createData();
+    // debugPrintAllPicks();
     var boxscore;
     var players;
     picksList = await getList();
     for(int i=0;i<livePickedGames.length;i++){
+      debugPrint(livePickedGames.toString());
       final res = await http.get(Uri.parse('https://cdn.nba.com/static/json/liveData/boxscore/boxscore_${livePickedGames[i]}.json'));
-      boxscore = json.decode(res.body)["game"];
+      if (res.statusCode == 200){
+        boxscore = json.decode(res.body)["game"];
+      }
+      else {
+        break;
+      }
       for(int j=0;j<picksList.length;j++){
         if(picksList[j].gameId==boxscore["gameId"].toString()){
           picksList[j].gameStatus = boxscore["gameStatus"].toString();
@@ -103,17 +112,21 @@ class _MyPicksPageState extends State<MyPicksPage> {
       players = [...boxscore["homeTeam"]["players"],...boxscore["awayTeam"]["players"]];
       for (int k = 0; k < players.length; k++) {
         for (int m = 0; m < picksList.length; m++) {
-          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Points') {
-            picksList[m].goals.current = players[k]["statistics"]["points"].toString();
-          }
-          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Rebounds') {
-            picksList[m].goals.current = players[k]["statistics"]["reboundsTotal"].toString();
-          }
-          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Assists') {
-            picksList[m].goals.current = players[k]["statistics"]["assists"].toString();
-          }
-          if (picksList[m].playerId == players[k]["personId"].toString() && picksList[m].goals.stat == 'Three Pointers') {
-            picksList[m].goals.current = players[k]["statistics"]["threePointersMade"].toString();
+          if (picksList[m].playerId == players[k]["personId"].toString()) {
+            picksList[m].onCourt = int.parse(players[k]["oncourt"]);
+
+            if(picksList[m].goals.stat == 'Points') {
+              picksList[m].goals.current =players[k]["statistics"]["points"].toString();
+            }
+            if(picksList[m].goals.stat == 'Rebounds') {
+              picksList[m].goals.current =players[k]["statistics"]["reboundsTotal"].toString();
+            }
+            if(picksList[m].goals.stat == 'Assists') {
+              picksList[m].goals.current = players[k]["statistics"]["assists"].toString();
+            }
+            if(picksList[m].goals.stat == 'Three Pointers'){
+              picksList[m].goals.current = players[k]["statistics"]["threePointersMade"].toString();
+            }
           }
         }
       }
@@ -123,13 +136,15 @@ class _MyPicksPageState extends State<MyPicksPage> {
     return picks;
     }
 
+  bool canVibrate = false;
 
   @override
   void initState() {
     createData();
     fetchData();
+    _checkIfVibrate();
     Timer timer =
-        Timer.periodic(Duration(seconds: 15), (Timer t) => setState(() {}));
+        Timer.periodic(Duration(seconds: 5), (Timer t) => setState(() {}));
   }
 
   @override
@@ -214,6 +229,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                           children: [
                                             GestureDetector(
                                               onTap: (){
+                                                _getVibration(FeedbackType.heavy);
                                                 _dialogBuilder(context,snapshot.data,index);
                                                 // snapshot.data.removeAt(index);
                                                 // saveList(snapshot.data);
@@ -230,10 +246,6 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                       ],
                                     ),
                                   ),
-                                  // Container(
-                                  //   height: 1,
-                                  //   color: Colors.black12,
-                                  // ),
                                   Column(children: [
                                     ListTile(
                                       title: Row(
@@ -242,12 +254,31 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                         children: [
                                           Row(
                                             children: [
-                                              CircleAvatar(
-                                                backgroundImage: NetworkImage(
-                                                    snapshot.data[index]
-                                                        .headshot),
-                                                backgroundColor: Colors.white,
-                                              ),
+                                      Center(
+                                      child: SizedBox.fromSize(
+                                      size: Size.fromRadius(20),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: <Widget>[
+                                  CircleAvatar(
+                                    backgroundImage: NetworkImage(
+                                        snapshot.data[index]
+                                            .headshot),
+                                    backgroundColor: Colors.white,
+                                  ),
+                                  snapshot.data[index].gameStatus=='2' ? Positioned(
+                                    right: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(shape: BoxShape.circle, color: (snapshot.data[index].onCourt==1 && snapshot.data[index].gameStatus=='2') ? Color(0xff42c256) : Colors.grey),
+                                      width: 12 / 2,
+                                      height: 12 / 2,
+                                    ),
+                                  ) : Container()
+                                ],
+                              ),
+                            ),
+                    ),
+
                                               Container(
                                                 width: 10,
                                               ),
@@ -286,10 +317,8 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                     ),
                                     Padding(
                                       padding:
-                                          EdgeInsets.fromLTRB(0, 0, 24, 5),
-                                      child: snapshot
-                                                  .data[index].gameStatus ==
-                                              'In Play'
+                                          EdgeInsets.fromLTRB(0, 0, 15, 5),
+                                      child: snapshot.data[index].gameStatus == '2'
                                           ? Row(
                                               mainAxisAlignment:
                                                   MainAxisAlignment
@@ -319,7 +348,7 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                             Size.square(5),
                                                       ),
                                                     ),
-                                                    snapshot.data[index]
+                                                    !snapshot.data[index]
                                                             .isPeriodActive
                                                         ? Text(' --',
                                                             style: TextStyle(
@@ -330,25 +359,26 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                                         .w500))
                                                         : Text(
                                                             "  " +
-                                                                snapshot
-                                                                    .data[
-                                                                        index]
-                                                                    .clock
-                                                                    .split(
-                                                                        ":")[0] +
-                                                                "'",
+                                                                snapshot.data[index].clock.substring(2,4) +
+                                                                ":" + snapshot.data[index].clock.substring(5,7),
                                                             style: TextStyle(
                                                                 color: Colors
                                                                     .redAccent,
                                                                 fontWeight:
                                                                     FontWeight
-                                                                        .w500),
+                                                                        .w400),
                                                           )
                                                   ],
                                                 ),
                                               ],
                                             )
-                                          : Container(),
+                                          : Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Container(),
+                                              Text(DateTime.parse(snapshot.data[index].startDate).toLocal().toString().split(' ')[1].substring(0,5)+'       ',style: TextStyle(color: Colors.grey),),
+                                            ],
+                                          ),
                                     ),
                                     Container(
                                       height: 1,
@@ -545,5 +575,17 @@ class _MyPicksPageState extends State<MyPicksPage> {
         );
       },
     );
+  }
+
+  _checkIfVibrate() async {
+    // check if device can vibrate
+    canVibrate = await Vibrate.canVibrate;
+  }
+
+  _getVibration(feedbackType) async {
+    if (canVibrate) {
+      Vibrate.feedback(feedbackType);
+      // Vibrate.vibrate();   // Try this too!
+    }
   }
 }
