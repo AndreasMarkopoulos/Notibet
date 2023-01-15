@@ -51,7 +51,7 @@ class _AddPickPageState extends State<AddPickPage> {
               Container(height: 30,),
               Container(height: 1, color: Colors.grey[300],),
               Container(height: 30,),
-              Text('Select a statitic:',
+              Text('Select a statistic:',
                 style: TextStyle(fontWeight: FontWeight.w500),),
               Container(height: 10,),
               Container(

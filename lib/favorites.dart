@@ -39,7 +39,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
       var stats = { "points": allStats[29], "rebounds":allStats[21], "assists":allStats[22], "threePointers":allStats[13], "gamesPlayed":allStats[5] };
       return stats;
     } else {
-      debugPrint('Failed to fetch common team roster: ${res.statusCode}');
+      debugPrint('Failed to fetch player statistics: ${res.statusCode}');
       return;
     }
   }
