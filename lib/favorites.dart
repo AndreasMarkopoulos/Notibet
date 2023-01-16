@@ -84,6 +84,11 @@ class _FavoritesPageState extends State<FavoritesPage> {
       if(snapshot.data==null){
         return Center(child: CircularProgressIndicator());
       }
+      if( snapshot.data.length <1){
+        return Center(
+          child: Text("No favorites added", style: TextStyle(fontSize: 25,fontWeight: FontWeight.w300,color: Colors.grey),),
+        );
+      }
           return ListView.builder(
               itemCount: snapshot.data.length,
               itemBuilder: (BuildContext context, int index) {
