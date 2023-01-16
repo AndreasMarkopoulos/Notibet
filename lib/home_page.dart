@@ -157,7 +157,7 @@ class _HomePageState extends State<HomePage> {
                                                       children:[
                                                         Padding(
                                                           padding: const EdgeInsets.fromLTRB(0, 0,25, 0),
-                                                          child: Container(width: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["homeTeam"]["teamId"]}.png')),
+                                                          child: Container(height: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["homeTeam"]["teamId"]}.png')),
                                                           // child: Container(width: 25,height: 25, child: SvgPicture.network('https://cdn.nba.com/logos/nba/${snapshot.data[index]["homeTeam"]["teamId"].toString()}/global/L/logo.svg')),
                                                         ),
                                                         Text(snapshot.data[index]["homeTeam"]["teamCity"]+" "+snapshot.data[index]["homeTeam"]["teamName"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
@@ -171,7 +171,7 @@ class _HomePageState extends State<HomePage> {
                                                       children: [
                                                         Padding(
                                                           padding: const EdgeInsets.fromLTRB(0, 0,25, 0),
-                                                          child: Container(width: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["awayTeam"]["teamId"]}.png')),
+                                                          child: Container(height: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["awayTeam"]["teamId"]}.png')),
                                                           // child: Container(width: 25,height: 25, child: SvgPicture.network('https://cdn.nba.com/logos/nba/${snapshot.data[index]["awayTeam"]["teamId"].toString()}/global/L/logo.svg')),
                                                         ),
                                                         Text(snapshot.data[index]["awayTeam"]["teamCity"]+" "+snapshot.data[index]["awayTeam"]["teamName"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
