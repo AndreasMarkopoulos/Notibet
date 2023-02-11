@@ -74,8 +74,6 @@ class _HomePageState extends State<HomePage> {
       for(int i=0;i<schedule.length;i++){
         // debugPrint(schedule[i]["gameDate"]);
         if(schedule[i]["gameDate"].split(" ")[0]==DateFormat('MM/dd/yyyy').format(DateTime.now())){
-          debugPrint(schedule[i].toString());
-
           games =[...schedule[i-1]["games"],...schedule[i]["games"],...schedule[i+1]["games"]];
           break;
         }
@@ -108,8 +106,9 @@ class _HomePageState extends State<HomePage> {
           child: FutureBuilder(
             future:  getSchedule(),
             builder: (context, AsyncSnapshot snapshot) {
-              if (snapshot.data==null)
+              if (snapshot.data==null) {
                 return Center(child: CircularProgressIndicator());
+              }
               else{
                 return Container(
                   margin: EdgeInsets.fromLTRB(0,20,0,0),
@@ -139,7 +138,7 @@ class _HomePageState extends State<HomePage> {
                                               child: Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                 children: [
-                                                  Text(snapshot.data[index]["gameStatus"]==3 ? snapshot.data[index]["gameStatusText"] : (DateTime.parse(snapshot.data[index]["gameTimeUTC"]).toLocal().toString().split(" ")[1].substring(0,5)+"\n"+DateTime.parse(snapshot.data[index]["gameTimeUTC"]).toLocal().toString().split(" ")[0].substring(5,10).split('-')[1]+'-'+DateTime.parse(snapshot.data[index]['gameTimeUTC']).toLocal().toString().split(" ")[0].substring(5,10).split('-')[0] ),
+                                                  Text(snapshot.data[index]["gameStatus"]=='3' ? snapshot.data[index]["gameStatusText"] : (DateTime.parse(snapshot.data[index]["gameDateTimeUTC"]).toLocal().add(const Duration(minutes: 10)).toString().split(" ")[1].substring(0,5)+"\n"+DateTime.parse(snapshot.data[index]["gameDateTimeUTC"]).toLocal().toString().split(" ")[0].substring(5,10).split('-')[1]+'-'+DateTime.parse(snapshot.data[index]['gameDateTimeUTC']).toLocal().toString().split(" ")[0].substring(5,10).split('-')[0] ),
                                                     style: TextStyle(fontWeight: FontWeight.w300,fontSize: 15,color: Colors.black54),
                                                     textAlign: TextAlign.center,)
                                                 ],
@@ -157,7 +156,7 @@ class _HomePageState extends State<HomePage> {
                                                       children:[
                                                         Padding(
                                                           padding: const EdgeInsets.fromLTRB(0, 0,25, 0),
-                                                          child: Container(height: 20,child: Image.asset('assets/team_pngs/${snapshot.data[index]["homeTeam"]["teamId"]}.png')),
+                                                          child: Image.asset('assets/team_pngs/${snapshot.data[index]["homeTeam"]["teamId"]}.png',height: 25,width: 25,),
                                                           // child: Container(width: 25,height: 25, child: SvgPicture.network('https://cdn.nba.com/logos/nba/${snapshot.data[index]["homeTeam"]["teamId"].toString()}/global/L/logo.svg')),
                                                         ),
                                                         Text(snapshot.data[index]["homeTeam"]["teamCity"]+" "+snapshot.data[index]["homeTeam"]["teamName"],style: TextStyle(fontWeight: FontWeight.w500,fontSize: 14),),
