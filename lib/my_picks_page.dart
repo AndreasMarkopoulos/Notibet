@@ -418,55 +418,19 @@ class _MyPicksPageState extends State<MyPicksPage> {
                                                       10, 10, 15, 0),
                                               child: Row(
                                                 children: [
-                                                  (snapshot.data[index].goals.percentage < 1) ? Padding(padding: snapshot.data[index].pickStatus ==-1                                                              ? const EdgeInsets
-                                                                      .fromLTRB(
-                                                                  0, 0, 10, 0)
-                                                              : const EdgeInsets
-                                                                      .fromLTRB(
-                                                                  0,
-                                                                  0,
-                                                                  27,
-                                                                  0),
-                                                          child: Text(
-                                                            snapshot
-                                                                    .data[
-                                                                        index]
-                                                                    .goals
-                                                                    .current +
-                                                                " / " +
-                                                                (int.parse(snapshot
-                                                                            .data[index]
-                                                                            .goals
-                                                                            .line) +
-                                                                        1)
-                                                                    .toString(),
-                                                            style: snapshot
-                                                                        .data[
-                                                                            index]
-                                                                        .gameStatus ==
-                                                                    'Finished'
-                                                                ? TextStyle(
-                                                                    color: Colors
-                                                                        .black26)
-                                                                : TextStyle(),
-                                                          ),
+                                                  (snapshot.data[index].pickStatus == 0)
+                                                      ? Padding(padding: snapshot.data[index].pickStatus ==-1
+                                                                ? const EdgeInsets.fromLTRB(0, 0, 10, 0)
+                                                                : const EdgeInsets.fromLTRB(0,0,27,0),
+                                                    child: Text(
+                                                            snapshot.data[index].goals.current + " / " +(int.parse(snapshot.data[index].goals.line) + 1).toString(),
+                                                            style: snapshot.data[index].gameStatus == 'Finished' ? TextStyle( color: Colors.black26) : TextStyle(),),
                                                         )
+                                                      :
+                                                  snapshot.data[index].pickStatus == -1 ? Icon(Icons.cancel,color: Color(0xfff0506e),size: 17,)
                                                       : Icon(
-                                                          Icons.check_circle,
-                                                          color: Color(
-                                                              0xff42c256),
-                                                          size: 17,
-                                                        ),
-                                                  snapshot.data[index]
-                                                              .pickStatus ==
-                                                          -1
-                                                      ? Icon(
-                                                          Icons.cancel,
-                                                          color: Color(
-                                                              0xfff0506e),
-                                                          size: 17,
-                                                        )
-                                                      : Container(),
+                                                      Icons.check_circle,
+                                                      color: Color(0xff42c256),size: 17),
                                                 ],
                                               ),
                                             )
