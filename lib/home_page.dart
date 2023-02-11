@@ -73,8 +73,8 @@ class _HomePageState extends State<HomePage> {
       schedule = json.decode(response.body)['leagueSchedule']["gameDates"];
       for(int i=0;i<schedule.length;i++){
         // debugPrint(schedule[i]["gameDate"]);
-        if(schedule[i]["gameDate"].split(" ")[0]==DateFormat('M/d/yyyy').format(DateTime.now())){
-          // debugPrint(schedule[i].toString());
+        if(schedule[i]["gameDate"].split(" ")[0]==DateFormat('MM/dd/yyyy').format(DateTime.now())){
+          debugPrint(schedule[i].toString());
 
           games =[...schedule[i-1]["games"],...schedule[i]["games"],...schedule[i+1]["games"]];
           break;
